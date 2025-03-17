@@ -1,0 +1,39 @@
+name : {{room.name}} <br>
+bio : {{room.bio}} <br>
+
+
+members : 
+{% for member in room.members.all  %}
+    {{member.username}}, 
+{% endfor %}
+<br>
+    
+admin : {{room.admin}} <br>
+
+<h1>Tasks</h1>
+
+
+{% for member in room.members.all  %}
+<h2>{{member}}</h2>
+    
+    {% for todo in member.todos.all  %}
+    
+    {% if todo.room == room %}
+    <li>{{todo.task}}</li>
+    
+    {% if todo.completed %}
+    <b>completed ../</b>
+    {% else %}
+    <b>not completed</b>
+        
+    {% endif %}
+        
+        
+    {% endif %}
+        
+        
+            
+    {% endfor %}
+        
+{% endfor %}
+    

@@ -4,10 +4,10 @@ from .models import Todo, Room
 # Register your models here.
 class TodoAdmin(admin.ModelAdmin):
     list_display = [
-        'user','room', 'action'
+        'user','room', 'task'
     ]
     list_filter = ['user']
-    search_fields = ['user__username','action', 'room__name']
+    search_fields = ['user__username','task', 'room__name']
 
 class RoomAdmin(admin.ModelAdmin):
     list_display = [
