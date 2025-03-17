@@ -83,7 +83,6 @@ def profileview(request):
 
 
 class DisplayProfileView(DetailView):
-    model = Profile
     template_name = 'myprofile.html'
     context_object_name = 'profile'
 
