@@ -40,7 +40,7 @@ class RoomJoinView(FormView):
     
     def get_success_url(self):
         room = self.room
-        print(room)
+        # print(room)
         return reverse_lazy('room', kwargs = {'room_id': room.id})
     
 

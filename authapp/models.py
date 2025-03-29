@@ -5,7 +5,7 @@ from django.contrib.auth.models import AbstractUser
 
 class CustomUser(AbstractUser):
     age = models.PositiveIntegerField(null=True, blank=True)
-
+    last_online = models.DateTimeField(null=True, blank=True)  # Store last online time
     def __str__(self):
         return  str(self.username)
 

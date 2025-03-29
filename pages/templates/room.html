@@ -1,39 +1,163 @@
-name : {{room.name}} <br>
-bio : {{room.bio}} <br>
+{% extends 'base.html' %}
+{% block title %}Room Details{% endblock %}
+{% block content %}
+<style>
+  .room-container {
+    max-width: 800px;
+    margin: 2rem auto;
+    padding: 2rem;
+    background-color: #1f1f1f;
+    border-radius: 12px;
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+    color: #fff;
+  }
+  
+  .room-header {
+    padding-bottom: 1rem;
+    margin-bottom: 1.5rem;
+    border-bottom: 1px solid #444;
+  }
+  
+  .room-info-item {
+    margin-bottom: 1rem;
+    display: flex;
+  }
+  
+  .room-info-label {
+    font-weight: 600;
+    width: 100px;
+    color: #ff9800;
+  }
+  
+  .room-info-value {
+    flex: 1;
+  }
+  
+  .member-chip {
+    display: inline-block;
+    background-color: #2d2d2d;
+    padding: 0.3rem 0.8rem;
+    border-radius: 20px;
+    margin-right: 0.5rem;
+    margin-bottom: 0.5rem;
+  }
+  
+  .admin-badge {
+    background-color: #ff9800;
+    color: #000;
+  }
+  
+  .tasks-section {
+    margin-top: 2rem;
+  }
+  
+  .tasks-heading {
+    font-size: 1.8rem;
+    color: #ff9800;
+    margin-bottom: 1.5rem;
+    padding-bottom: 0.5rem;
+    border-bottom: 1px solid #444;
+  }
+  
+  .member-tasks {
+    background-color: #2d2d2d;
+    border-radius: 10px;
+    padding: 1.5rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .member-name {
+    font-size: 1.3rem;
+    margin-bottom: 1rem;
+    color: #ff9800;
+  }
+  
+  .task-item {
+    display: flex;
+    align-items: flex-start;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.8rem;
+    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
+  }
+  
+  .task-content {
+    flex: 1;
+  }
+  
+  .task-status {
+    margin-left: 1rem;
+    padding: 0.3rem 0.6rem;
+    border-radius: 4px;
+    font-size: 0.8rem;
+    font-weight: 600;
+  }
+  
+  .status-completed {
+    background-color: #4caf50;
+    color: white;
+  }
+  
+  .status-pending {
+    background-color: #f44336;
+    color: white;
+  }
+</style>
 
-
-members : 
-{% for member in room.members.all  %}
-    {{member.username}}, 
-{% endfor %}
-<br>
+<div class="room-container">
+  <div class="room-header">
+    <h1>{{ room.name }}</h1>
+  </div>
+  
+  <div class="room-info">
+    <div class="room-info-item">
+      <div class="room-info-label">Bio:</div>
+      <div class="room-info-value">{{ room.bio }}</div>
+    </div>
     
-admin : {{room.admin}} <br>
-
-<h1>Tasks</h1>
-
-
-{% for member in room.members.all  %}
-<h2>{{member}}</h2>
+    <div class="room-info-item">
+      <div class="room-info-label">Admin:</div>
+      <div class="room-info-value">
+        <span class="member-chip admin-badge">{{ room.admin }}</span>
+      </div>
+    </div>
     
-    {% for todo in member.todos.all  %}
+    <div class="room-info-item">
+      <div class="room-info-label">Members:</div>
+      <div class="room-info-value">
+        {% for member in room.members.all %}
+          <span class="member-chip">{{ member.username }}</span>
+        {% endfor %}
+      </div>
+    </div>
+  </div>
+  
+  <div class="tasks-section">
+    <h2 class="tasks-heading">Tasks</h2>
     
-    {% if todo.room == room %}
-    <li>{{todo.task}}</li>
-    
-    {% if todo.completed %}
-    <b>completed ../</b>
-    {% else %}
-    <b>not completed</b>
+    {% for member in room.members.all %}
+      <div class="member-tasks">
+        <h3 class="member-name"><a href = "{% url 'profile' username=member.username %}" style="text-decoration: none;">{{ member }}</a></h3>
         
-    {% endif %}
+        {% for todo in member.todos.all %}
+          {% if todo.room == room %}
+            <div class="task-item">
+              <div class="task-content">{{ todo.task }}</div>
+              {% if todo.completed %}
+                <div class="task-status status-completed">Completed</div>
+              {% else %}
+                <div class="task-status status-pending">Pending</div>
+              {% endif %}
+            </div>
+          {% endif %}
+        {% endfor %}
         
-        
-    {% endif %}
-        
-        
-            
+        {% if not member.todos.all|length %}
+          <div class="task-item">
+            <em>No tasks assigned</em>
+          </div>
+        {% endif %}
+      </div>
     {% endfor %}
-        
-{% endfor %}
-    
+  </div>
+</div>
+{% endblock %}

@@ -1,5 +1,88 @@
-<form action="" method="post">
-    {% csrf_token %}
-{{form.as_p}}
-<input type="submit" value="Create Room">
-</form>
+{% extends 'base.html' %}
+{% block title %}Create Room{% endblock %}
+{% block content %}
+<style>
+  .form-field-wrapper {
+    width: 100%;
+    overflow: hidden;
+  }
+  
+  #id_name, #id_password {
+    width: 100%;
+    max-width: 100%;
+    background-color: #2d2d2d;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+  }
+  
+  #id_bio {
+    width: 100%;
+    max-width: 100%;
+    min-height: 80px;
+    max-height: 10px;
+    resize: vertical;
+    background-color: #2d2d2d;
+    color: white;
+    border: 1px solid #444;
+    border-radius: 6px;
+    padding: 8px;
+  }
+</style>
+
+
+<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
+  <div class="card p-4 shadow-lg" style="width: 100%; max-width: 400px; background-color: #1f1f1f; border-radius: 12px;">
+    <h2 class="text-center mb-3" style="color: #ffffff;">Create a Room</h2>
+    {% if form.errors %}
+    <div class="alert alert-danger">
+        <strong>Error:</strong> Please correct the errors below.
+    </div>
+    {% endif %}
+    <form method="POST">
+      {% csrf_token %}
+      <div class="mb-3">
+        <label class="form-label text-light" for="id_name">Room Name</label>
+        <div class="form-field-wrapper">
+          {{ form.name }}
+        </div>
+        {% if form.name.errors %}
+            <div class="text-danger small mt-1">
+                {{ form.name.errors }}
+            </div>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-light" for="id_bio">Room Bio</label>
+        <div class="form-field-wrapper">
+          {{ form.bio }}
+        </div>
+        {% if form.bio.errors %}
+            <div class="text-danger small mt-1">
+                {{ form.bio.errors }}
+            </div>
+        {% endif %}
+      </div>
+      <div class="mb-3">
+        <label class="form-label text-light" for="id_password">Password</label>
+        <div class="form-field-wrapper">
+          {{ form.password }}
+        </div>
+        {% if form.password.errors %}
+            <div class="text-danger small mt-1">
+                {{ form.password.errors }}
+            </div>
+        {% endif %}
+
+      </div>
+      <button type="submit" class="btn w-100" style="background-color: #ff9800; color: #fff; font-weight: bold; border-radius: 8px; transition: 0.3s;">
+        <i class="bi bi-door-open"></i> Create Room
+      </button>
+    </form>
+    <div class="text-center mt-3">
+      <a href="/dashboard" class="text-decoration-none text-light">&#8592; Back to Dashboard</a>
+    </div>
+  </div>
+</div>
+{% endblock %}

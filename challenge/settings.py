@@ -25,7 +25,7 @@ SECRET_KEY = 'django-insecure-b71jw9a!vz!=24d)y+m(!s!l&0_raizt29b92rpd$(o_bm7qv6
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['0.0.0.0', '192.168.1.72', '127.0.0.1']
 
 
 # Application definition
@@ -49,6 +49,7 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
+    'authapp.middleware.UpdateLastOnlineMiddleware'
 ]
 
 ROOT_URLCONF = 'challenge.urls'

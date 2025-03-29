@@ -6,6 +6,7 @@ from .models import CustomUser, Profile
 from .forms import CustomUserCreationForm
 from django.urls import reverse_lazy , reverse
 from .forms import PassChangeForm
+from pages.models import Todo
 
 # Create your views here.
 
@@ -83,9 +84,21 @@ def profileview(request):
 
 
 class DisplayProfileView(DetailView):
-    template_name = 'myprofile.html'
+    template_name = 'profile.html'
     context_object_name = 'profile'
 
     def get_object(self, queryset = ...):
-        profile = Profile.objects.filter(user = self.request.user).first()
+        profile = Profile.objects.filter(user__username = self.kwargs['username']).first()
         return profile
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        incompleted = {}
+        incompleted_todos = Todo.objects.filter(user = self.request.user).filter(completed= False)
+        for i in incompleted_todos:
+            incompleted[i.room] = incompleted.get(i.room, 0) + 1
+        
+        context['incompleted_todosroom'] = incompleted
+        print(context)
+        return context
+

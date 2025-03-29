@@ -6,5 +6,5 @@ urlpatterns = [
     path('logout/', logoutview, name='logout'),
     path('changepass/', passwordchangeview, name='changepass'),
     path('editprofile/', profileview, name='editprofile'),
-    path('myprofile/', DisplayProfileView.as_view(), name='profile'),
+    path('<str:username>/', DisplayProfileView.as_view(), name='profile'),
 ]
