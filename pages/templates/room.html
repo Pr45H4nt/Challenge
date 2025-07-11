@@ -1,163 +1,35 @@
 {% extends 'base.html' %}
-{% block title %}Room Details{% endblock %}
-{% block content %}
-<style>
-  .room-container {
-    max-width: 800px;
-    margin: 2rem auto;
-    padding: 2rem;
-    background-color: #1f1f1f;
-    border-radius: 12px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
-    color: #fff;
-  }
-  
-  .room-header {
-    padding-bottom: 1rem;
-    margin-bottom: 1.5rem;
-    border-bottom: 1px solid #444;
-  }
-  
-  .room-info-item {
-    margin-bottom: 1rem;
-    display: flex;
-  }
-  
-  .room-info-label {
-    font-weight: 600;
-    width: 100px;
-    color: #ff9800;
-  }
-  
-  .room-info-value {
-    flex: 1;
-  }
-  
-  .member-chip {
-    display: inline-block;
-    background-color: #2d2d2d;
-    padding: 0.3rem 0.8rem;
-    border-radius: 20px;
-    margin-right: 0.5rem;
-    margin-bottom: 0.5rem;
-  }
-  
-  .admin-badge {
-    background-color: #ff9800;
-    color: #000;
-  }
-  
-  .tasks-section {
-    margin-top: 2rem;
-  }
-  
-  .tasks-heading {
-    font-size: 1.8rem;
-    color: #ff9800;
-    margin-bottom: 1.5rem;
-    padding-bottom: 0.5rem;
-    border-bottom: 1px solid #444;
-  }
-  
-  .member-tasks {
-    background-color: #2d2d2d;
-    border-radius: 10px;
-    padding: 1.5rem;
-    margin-bottom: 1.5rem;
-  }
-  
-  .member-name {
-    font-size: 1.3rem;
-    margin-bottom: 1rem;
-    color: #ff9800;
-  }
-  
-  .task-item {
-    display: flex;
-    align-items: flex-start;
-    margin-bottom: 0.8rem;
-    padding-bottom: 0.8rem;
-    border-bottom: 1px solid rgba(255, 255, 255, 0.1);
-  }
-  
-  .task-content {
-    flex: 1;
-  }
-  
-  .task-status {
-    margin-left: 1rem;
-    padding: 0.3rem 0.6rem;
-    border-radius: 4px;
-    font-size: 0.8rem;
-    font-weight: 600;
-  }
-  
-  .status-completed {
-    background-color: #4caf50;
-    color: white;
-  }
-  
-  .status-pending {
-    background-color: #f44336;
-    color: white;
-  }
-</style>
 
-<div class="room-container">
-  <div class="room-header">
-    <h1>{{ room.name }}</h1>
-  </div>
-  
-  <div class="room-info">
-    <div class="room-info-item">
-      <div class="room-info-label">Bio:</div>
-      <div class="room-info-value">{{ room.bio }}</div>
+{% block content %}
+<div class="container mt-4">
+    <h1 class="h2">{{ room.name }}</h1>
+    
+    <div class="mt-3">
+        <h2 class="h4">Active Sessions</h2>
+        <ul class="list-group">
+            {% for session in active_sessions %}
+                <a href="{% url 'session' session_id=session.id %}"><li class="list-group-item">{{ session.name }}</li></a><button> <a href="{% url 'joinsession' session_id=session.id %}">Join Session</a></button>
+            {% empty %}
+                <li class="list-group-item">No active sessions</li>
+            {% endfor %}
+        </ul>
     </div>
     
-    <div class="room-info-item">
-      <div class="room-info-label">Admin:</div>
-      <div class="room-info-value">
-        <span class="member-chip admin-badge">{{ room.admin }}</span>
-      </div>
+    <div class="mt-3">
+        <h2 class="h4">Old Sessions</h2>
+        <ul class="list-group">
+            {% for session in old_sessions %}
+            <a href="{% url 'session' session_id=session.id %}">
+            <li class="list-group-item">{{ session.name }}</li>
+        </a>
+            {% empty %}
+                <li class="list-group-item">No old sessions</li>
+            {% endfor %}
+        </ul>
     </div>
     
-    <div class="room-info-item">
-      <div class="room-info-label">Members:</div>
-      <div class="room-info-value">
-        {% for member in room.members.all %}
-          <span class="member-chip">{{ member.username }}</span>
-        {% endfor %}
-      </div>
+    <div class="mt-4">
+        <a href="{% url 'createsession' room_id=room.id %}" class="btn btn-primary">Create Session</a>
     </div>
-  </div>
-  
-  <div class="tasks-section">
-    <h2 class="tasks-heading">Tasks</h2>
-    
-    {% for member in room.members.all %}
-      <div class="member-tasks">
-        <h3 class="member-name"><a href = "{% url 'profile' username=member.username %}" style="text-decoration: none;">{{ member }}</a></h3>
-        
-        {% for todo in member.todos.all %}
-          {% if todo.room == room %}
-            <div class="task-item">
-              <div class="task-content">{{ todo.task }}</div>
-              {% if todo.completed %}
-                <div class="task-status status-completed">Completed</div>
-              {% else %}
-                <div class="task-status status-pending">Pending</div>
-              {% endif %}
-            </div>
-          {% endif %}
-        {% endfor %}
-        
-        {% if not member.todos.all|length %}
-          <div class="task-item">
-            <em>No tasks assigned</em>
-          </div>
-        {% endif %}
-      </div>
-    {% endfor %}
-  </div>
 </div>
 {% endblock %}

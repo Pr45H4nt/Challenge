@@ -18,4 +18,3 @@ class RoomJoinForm(forms.Form):
         raise forms.ValidationError("Wrong Password. Check again")
 
     
-

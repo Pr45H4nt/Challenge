@@ -7,23 +7,29 @@ from .forms import CustomUserCreationForm
 from django.urls import reverse_lazy , reverse
 from .forms import PassChangeForm
 from pages.models import Todo
-
+from django.contrib.auth.decorators import login_required
+from django.contrib.auth.mixins import LoginRequiredMixin as LRM
 # Create your views here.
 
 class SignupView(FormView):
     template_name = 'signup.html'
     model = CustomUser
     form_class = CustomUserCreationForm
-    success_url = reverse_lazy('home')
+    success_url = reverse_lazy('editprofile')
 
     def form_valid(self, form):
-        form.save()
+        user = form.save()
+        login(self.request, user)
         return super().form_valid(form)
 
 
 class Login(LoginView):
     template_name = 'login.html'
-    success_url = reverse_lazy('home')
+
+    def get_success_url(self):
+        if Profile.objects.filter(user = self.request.user).exists():
+            return reverse_lazy('home')
+        return reverse_lazy('editprofile')
 
 def logoutview(request):
     logout(request)
@@ -31,7 +37,7 @@ def logoutview(request):
 
     return redirect(home_url)
 
-
+@login_required
 def passwordchangeview(request):
     context = {}
     if request.method == "POST":
@@ -54,7 +60,8 @@ def passwordchangeview(request):
     context['form'] = form
     return render(request, 'changepass.html', context)
 
-class ProfileCreateView(CreateView):
+
+class ProfileCreateView(LRM,CreateView):
     template_name = 'editprofile.html'
     model = Profile
     fields = ['bio']
@@ -64,8 +71,7 @@ class ProfileCreateView(CreateView):
         form.instance.user = self.request.user
         return super().form_valid(form)
     
-
-class ProfileUpdateView(UpdateView):
+class ProfileUpdateView(LRM,UpdateView):
     template_name = 'editprofile.html'
     model = Profile
     fields = ('bio',)
@@ -75,6 +81,7 @@ class ProfileUpdateView(UpdateView):
         return self.request.user.profile
     
 
+@login_required
 def profileview(request):
     if Profile.objects.filter(user= request.user).exists():
         view = ProfileUpdateView.as_view()
@@ -83,7 +90,7 @@ def profileview(request):
     return view(request)
 
 
-class DisplayProfileView(DetailView):
+class DisplayProfileView(LRM,DetailView):
     template_name = 'profile.html'
     context_object_name = 'profile'
 
@@ -96,7 +103,7 @@ class DisplayProfileView(DetailView):
         incompleted = {}
         incompleted_todos = Todo.objects.filter(user = self.request.user).filter(completed= False)
         for i in incompleted_todos:
-            incompleted[i.room] = incompleted.get(i.room, 0) + 1
+            incompleted[i.session.room] = incompleted.get(i.session.room, 0) + 1
         
         context['incompleted_todosroom'] = incompleted
         print(context)
