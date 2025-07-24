@@ -3,55 +3,152 @@
 {% block title %}Login - Challenge{% endblock %}
 
 {% block content %}
-<div class="d-flex justify-content-center align-items-center" style="min-height: 80vh;">
-    <div class="card bg-dark text-light p-4 shadow" style="width: 380px;">
-        <h2 class="text-center mb-4">Login</h2>
-        
+<style>
+    body {
+        background-color: #121212;
+        color: #e0e0e0;
+        font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+        margin: 0;
+        padding: 0;
+    }
+
+    .login-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 90vh;
+    }
+
+    .login-card {
+        background-color: #1e1e1e;
+        padding: 30px;
+        border-radius: 12px;
+        width: 380px;
+        box-shadow: 0 8px 20px rgba(0, 0, 0, 0.4);
+    }
+
+    .login-card h2 {
+        text-align: center;
+        margin-bottom: 25px;
+        font-size: 24px;
+        color: #ffffff;
+    }
+
+    .form-group {
+        margin-bottom: 18px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        font-size: 15px;
+        color: #cccccc;
+    }
+
+    .form-group input {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #444;
+        border-radius: 8px;
+        background-color: #2a2a2a;
+        color: #ffffff;
+        font-size: 14px;
+    }
+
+    .form-group input:focus {
+        outline: none;
+        border-color: #66b0ff;
+        box-shadow: 0 0 5px #66b0ff55;
+    }
+
+    .error-text {
+        color: #ff5f5f;
+        font-size: 13px;
+        margin-top: 4px;
+    }
+
+    .alert {
+        background-color: #ff4444;
+        color: white;
+        padding: 10px 14px;
+        margin-bottom: 16px;
+        border-radius: 6px;
+        font-size: 14px;
+    }
+
+    .submit-btn {
+        width: 100%;
+        padding: 10px;
+        background-color: #007bff;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-size: 16px;
+        cursor: pointer;
+        transition: background-color 0.3s;
+    }
+
+    .submit-btn:hover {
+        background-color: #005ec2;
+    }
+
+    .register-link {
+        text-align: center;
+        margin-top: 20px;
+        font-size: 14px;
+    }
+
+    .register-link a {
+        color: #66b0ff;
+        text-decoration: none;
+    }
+
+    .register-link a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="login-container">
+    <div class="login-card">
+        <h2>🔐 Login</h2>
+
         {% if messages %}
             {% for message in messages %}
-                <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-                    {{ message }}
-                    <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-                </div>
+                <div class="alert">{{ message }}</div>
             {% endfor %}
         {% endif %}
-        
+
         {% if form.errors %}
-            <div class="alert alert-danger">
-                <strong>Error:</strong> Please correct the errors below.
-            </div>
+            <div class="alert">⚠️ Please correct the errors below.</div>
         {% endif %}
-        
-        <form method="POST">
+
+        <form method="POST" novalidate>
             {% csrf_token %}
-            
-            <div class="mb-3">
-                <label for="id_username" class="form-label">Username</label>
-                <input type="text" name="{{ form.username.name }}" id="{{ form.username.auto_id }}" 
-                       class="form-control w-100 py-2" {% if form.username.value %}value="{{ form.username.value }}"{% endif %}>
+
+            <div class="form-group">
+                <label for="{{ form.username.auto_id }}">Username</label>
+                <input type="text" name="{{ form.username.name }}" id="{{ form.username.auto_id }}"
+                       {% if form.username.value %} value="{{ form.username.value }}" {% endif %}
+                       {% if form.username.errors %} style="border-color: #ff5f5f;" {% endif %}>
                 {% if form.username.errors %}
-                    <div class="text-danger small mt-1">
-                        {{ form.username.errors }}
-                    </div>
+                    <div class="error-text">{{ form.username.errors.0 }}</div>
                 {% endif %}
             </div>
-            
-            <div class="mb-3">
-                <label for="id_password" class="form-label">Password</label>
-                <input type="password" name="{{ form.password.name }}" id="{{ form.password.auto_id }}" 
-                       class="form-control w-100 py-2">
+
+            <div class="form-group">
+                <label for="{{ form.password.auto_id }}">Password</label>
+                <input type="password" name="{{ form.password.name }}" id="{{ form.password.auto_id }}"
+                       {% if form.password.errors %} style="border-color: #ff5f5f;" {% endif %}>
                 {% if form.password.errors %}
-                    <div class="text-danger small mt-1">
-                        {{ form.password.errors }}
-                    </div>
+                    <div class="error-text">{{ form.password.errors.0 }}</div>
                 {% endif %}
             </div>
-            
-            <button type="submit" class="btn btn-primary w-100 py-2">Login</button>
+
+            <button type="submit" class="submit-btn">Login</button>
         </form>
-        
-        <div class="mt-4 text-center">
-            <p>Don't have an account? <a href="{% url 'signup' %}" class="text-decoration-none">Register</a></p>
+
+        <div class="register-link">
+            <p>Don't have an account? <a href="{% url 'signup' %}">Register here</a></p>
         </div>
     </div>
 </div>

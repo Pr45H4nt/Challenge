@@ -1,220 +1,612 @@
 {% extends 'base.html' %}
 
-{% block title %}{{ profile.user }}'s Profile{% endblock %}
+{% block title %}{{ profile.user.username }}'s Profile{% endblock %}
 
 {% block content %}
-<div class="container py-5">
-    <div class="row">
-        <!-- Profile Information -->
-        <div class="col-lg-4 mb-4">
-            <div class="card bg-dark text-light shadow">
+<div class="profile-container">
+    <div class="profile-layout">
+        <!-- Profile Information Sidebar -->
+        <div class="profile-sidebar">
+            <div class="content-block profile-card">
                 <div class="card-header">
-                    <h2 class="text-center mb-0">Profile</h2>
+                    <h2>Profile</h2>
                 </div>
-                <div class="card-body">
+                <div class="card-content">
                     {% if not profile %}
                         <div class="alert alert-warning">
-                            <p class="mb-0">Profile not found or not created yet.</p>
+                            <p>Profile not found or not created yet.</p>
+                            <a href="{% url 'createprofile' %}" class="btn-secondary">Create Profile</a>
                         </div>
                     {% else %}
-                        <div class="text-center mb-4">
-                            <div class="avatar-placeholder mb-3">
-                                <span class="display-4">{{ profile.user.username|first|upper }}</span>
+                        <div class="profile-info">
+                            <div class="avatar-placeholder">
+                                <span class="avatar-letter">{{ profile.user.username|first|upper }}</span>
                             </div>
-                            <h3 class="mb-0">{{ profile.user.username }}</h3>
+                            <h3 class="username">{{ profile.user.username }}</h3>
+                            
+                            <!-- User Stats -->
+                            <div class="user-stats">
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ profile.user.members_rooms.count }}</span>
+                                    <span class="stat-label">Joined Rooms</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ profile.user.admin_rooms.count }}</span>
+                                    <span class="stat-label">Owned Rooms</span>
+                                </div>
+                                <div class="stat-item">
+                                    <span class="stat-number">{{ profile.user.total_hours|default:0 }}</span>
+                                    <span class="stat-label">Total Hours</span>
+                                </div>
+                            </div>
                         </div>
-                        <hr>
                         
-                        <div class="mb-4">
-                            <h5>About</h5>
-                            <small>
-                                <p>{{ profile.bio|default:"No bio provided yet." }}</p>
-                            </small>
-                            <h5>Joined Date</h5>
-                            <p><small>{{ profile.user.date_joined|date:"F d, Y" }}</small></p>
-                            <h5>Last Online</h5>
-                            <p><small>{{user.last_online|date:"F d, Y" }}</small></p>
+                        <div class="profile-details">
+                            <div class="detail-section">
+                                <h5>About</h5>
+                                <p class="bio">{{ profile.bio|default:"No bio provided yet." }}</p>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h5>Member Since</h5>
+                                <p class="join-date">{{ profile.user.date_joined|date:"F d, Y" }}</p>
+                            </div>
+                            
+                            <div class="detail-section">
+                                <h5>Last Seen</h5>
+                                <p class="last-online">{{ user.last_online|date:"F d, Y" }}</p>
+                            </div>
                         </div>
                         
-                        <div class="d-grid gap-2">
-                            {% if request.user == profile.user %}
-                                <a href="{% url 'editprofile' %}" class="btn btn-primary">Edit Profile</a>
-                                <a href="{% url 'changepass' %}" class="btn btn-outline-secondary">Change Password</a>
-                            {% endif %}
+                        {% if request.user == profile.user %}
+                        <div class="profile-actions">
+                            <a href="{% url 'editprofile' %}" class="btn btn-primary">Edit Profile</a>
+                            <a href="{% url 'changepass' %}" class="btn btn-secondary">Change Password</a>
                         </div>
+                        {% endif %}
                     {% endif %}
                 </div>
             </div>
         </div>
         
-        
-        <div class="col-lg-8">
-             <!-- Joined Rooms -->
-             <div class="card bg-dark text-light shadow mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Joined Rooms</h2>
-                    {% if request.user == profile.user %}
-                        <a href="{% url 'joinroom' %}" class="btn btn-sm btn-primary">Join a Room</a>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {% if profile and profile.user.members_rooms.all %}
-                    
-                        <div class="list-group list-group-flush">
-                            {% for room in profile.user.members_rooms.all %}
-                                <a href="{% url 'room' room.id %}" class="list-group-item list-group-item-action bg-dark text-light border-light">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">{{ room.name }}</h5>
-                                            <p class="mb-1 text-light-emphasis">{{ room.bio|truncatechars:100 }}</p>
-                                            <small class="text-light-emphasis">
-                                                <i class="bi bi-people-fill"></i> {{ room.members.count }} participants
-                                            </small>
-                                        </div>
-                                        <div>
-                                            
-                                            <!-- incomplete tasks -->
-                                             
-                                             
-                                            
-                                            {% if not room in incompleted_todosroom %}
-                                            <span class="badge rounded-pill">
-                                                No Tasks
-                                            {% else %}
-                                            {% for i_room, count in incompleted_todosroom.items  %}
-                                                    <span class="badge bg-danger rounded-pill">
-                                                    Pending Tasks: {{ count }}
-                                                
-                                                
-                                             {% endfor %}
-                                            
-                                            {% endif %}
-                                             
-                                        </div>
-                                    </div>
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% elif profile and request.user == profile.user %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-chat-square-text display-1 text-muted mb-3"></i>
-                            <h4>No rooms joined yet</h4>
-                            <p class="text-light-emphasis">You haven't joined any rooms yet.</p>
-                            <a href="{% url 'joinroom' %}" class="btn btn-primary mt-2">Join a Room</a>
-                        </div>
-                    {% elif profile %}
-                        <p class="text-light-emphasis text-center py-3">This user hasn't joined any rooms.</p>
-                    {% else %}
-                        <div class="alert alert-warning">
-                            <p class="mb-0">Profile not found. Joined rooms cannot be displayed.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            <!-- Owned Rooms Section -->
-            <div class="card bg-dark text-light shadow mb-4">
-                <div class="card-header d-flex justify-content-between align-items-center">
-                    <h2 class="mb-0">Owned Rooms</h2>
-                    {% if request.user == profile.user %}
-                        <a href="{% url 'createroom' %}" class="btn btn-sm btn-success">Create Room</a>
-                    {% endif %}
-                </div>
-                <div class="card-body">
-                    {% if profile and profile.user.admin_rooms.all %}
-                        <div class="list-group list-group-flush">
-                            {% for room in profile.user.admin_rooms.all %}
-                                <a href="{% url 'room' room.id %}" class="list-group-item list-group-item-action bg-dark text-light border-light">
-                                    <div class="d-flex justify-content-between align-items-center">
-                                        <div>
-                                            <h5 class="mb-1">{{ room.name }}</h5>
-                                            <p class="mb-1 text-light-emphasis">{{ room.bio|truncatechars:100 }}</p>
-                                            <small class="text-light-emphasis">
-                                                <i class="bi bi-people-fill"></i> {{ room.members.count }} participants
-                                            </small>
-                                        </div>
-                                        <div>
-                                            <span class="badge bg-success rounded-pill">Owner</span>
-                                        </div>
-                                    </div>
-                                </a>
-                            {% endfor %}
-                        </div>
-                    {% elif profile and request.user == profile.user %}
-                        <div class="text-center py-4">
-                            <i class="bi bi-house-door display-1 text-muted mb-3"></i>
-                            <h4>No rooms created yet</h4>
-                            <p class="text-light-emphasis">You haven't created any rooms yet.</p>
-                            <a href="{% url 'createroom' %}" class="btn btn-success mt-2">Create a Room</a>
-                        </div>
-                    {% elif profile %}
-                        <p class="text-light-emphasis text-center py-3">This user doesn't own any rooms.</p>
-                    {% else %}
-                        <div class="alert alert-warning">
-                            <p class="mb-0">Profile not found. Owned rooms cannot be displayed.</p>
-                        </div>
-                    {% endif %}
-                </div>
-            </div>
-            
-           
-            
-            <!-- Recent Activity -->
-            <div class="card bg-dark text-light shadow">
+        <!-- Main Content Area -->
+        <div class="profile-main">
+            <!-- Joined Rooms -->
+            <div class="content-block">
                 <div class="card-header">
-                    <h3 class="mb-0">Recent Activity</h3>
+                    <h2>Joined Rooms</h2>
+                    {% if request.user == profile.user %}
+                        <a href="{% url 'joinroom' %}" class="btn btn-primary btn-sm">Join a Room</a>
+                    {% endif %}
                 </div>
-                <div class="card-body">
-                    {% if profile and profile.recent_messages %}
-                        <div class="list-group list-group-flush">
-                            {% for message in profile.recent_messages %}
-                                <div class="list-group-item bg-dark text-light border-light">
-                                    <div class="d-flex justify-content-between">
-                                        <small class="text-light-emphasis">{{ message.created|date:"M d, Y" }} in <a href="{% url 'room' message.room.id %}">{{ message.room.name }}</a></small>
-                                        <small class="text-light-emphasis">{{ message.created|time:"g:i A" }}</small>
-                                    </div>
-                                    <p class="mb-1 mt-2">{{ message.body|truncatechars:150 }}</p>
+                <div class="card-content">
+                    {% if profile and profile.user.members_rooms.all %}
+                        <div class="rooms-grid">
+                            {% for room in profile.user.members_rooms.all %}
+                                <div class="room-card">
+                                    <a href="{% url 'room' room.id %}" class="room-link">
+                                        <div class="room-info">
+                                            <div class="room-header">
+                                                <h4 class="room-name">{{ room.name }}</h4>
+                                                <div class="room-badges">
+                                                    {% if room.rank %}
+                                                        <span class="badge badge-rank">Rank #{{ room.rank }}</span>
+                                                    {% endif %}
+                                                    {% if room in incompleted_todosroom %}
+                                                        {% for i_room, count in incompleted_todosroom.items %}
+                                                            {% if i_room == room %}
+                                                                <span class="badge badge-danger">{{ count }} Pending</span>
+                                                            {% endif %}
+                                                        {% endfor %}
+                                                    {% else %}
+                                                        <span class="badge badge-success">All Clear</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <p class="room-description">{{ room.bio|truncatechars:100 }}</p>
+                                            <div class="room-meta">
+                                                <span class="member-count">
+                                                    <i class="icon">👥</i> {{ room.members.count }} members
+                                                </span>
+                                                <span class="room-activity">
+                                                    <i class="icon">📈</i> Active
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </a>
                                 </div>
                             {% endfor %}
                         </div>
+                    {% elif profile and request.user == profile.user %}
+                        <div class="empty-state">
+                            <div class="empty-icon">💬</div>
+                            <h4>No rooms joined yet</h4>
+                            <p>You haven't joined any rooms yet. Start connecting with others!</p>
+                            <a href="{% url 'joinroom' %}" class="btn btn-primary">Join a Room</a>
+                        </div>
+                    {% elif profile %}
+                        <p class="text-muted">This user hasn't joined any rooms.</p>
                     {% else %}
-                        <p class="text-light-emphasis text-center py-3">No recent activity to display.</p>
+                        <div class="alert alert-warning">
+                            <p>Profile not found. Joined rooms cannot be displayed.</p>
+                        </div>
                     {% endif %}
                 </div>
             </div>
+
+            <!-- Owned Rooms -->
+            <div class="content-block">
+                <div class="card-header">
+                    <h2>Owned Rooms</h2>
+                    {% if request.user == profile.user %}
+                        <a href="{% url 'createroom' %}" class="btn btn-success btn-sm">Create Room</a>
+                    {% endif %}
+                </div>
+                <div class="card-content">
+                    {% if profile and profile.user.admin_rooms.all %}
+                        <div class="rooms-grid">
+                            {% for room in profile.user.admin_rooms.all %}
+                                <div class="room-card owned-room">
+                                    <a href="{% url 'room' room.id %}" class="room-link">
+                                        <div class="room-info">
+                                            <div class="room-header">
+                                                <h4 class="room-name">{{ room.name }}</h4>
+                                                <div class="room-badges">
+                                                    <span class="badge badge-owner">Owner</span>
+                                                    {% if room.rank %}
+                                                        <span class="badge badge-rank">Rank #{{ room.rank }}</span>
+                                                    {% endif %}
+                                                    {% if room.pending_tasks_count %}
+                                                        <span class="badge badge-danger">{{ room.pending_tasks_count }} Tasks</span>
+                                                    {% else %}
+                                                        <span class="badge badge-success">All Clear</span>
+                                                    {% endif %}
+                                                </div>
+                                            </div>
+                                            <p class="room-description">{{ room.bio|truncatechars:100 }}</p>
+                                            <div class="room-meta">
+                                                <span class="member-count">
+                                                    <i class="icon">👥</i> {{ room.members.count }} members
+                                                </span>
+                                                <span class="room-activity">
+                                                    <i class="icon">⚡</i> Admin
+                                                </span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                </div>
+                            {% endfor %}
+                        </div>
+                    {% elif profile and request.user == profile.user %}
+                        <div class="empty-state">
+                            <div class="empty-icon">🏠</div>
+                            <h4>No rooms created yet</h4>
+                            <p>You haven't created any rooms yet. Be a leader!</p>
+                            <a href="{% url 'createroom' %}" class="btn btn-success">Create a Room</a>
+                        </div>
+                    {% elif profile %}
+                        <p class="text-muted">This user doesn't own any rooms.</p>
+                    {% else %}
+                        <div class="alert alert-warning">
+                            <p>Profile not found. Owned rooms cannot be displayed.</p>
+                        </div>
+                    {% endif %}
+                </div>
+            </div>
+
         </div>
     </div>
 </div>
-    
+
 <style>
+    .profile-container {
+        max-width: 1400px;
+        margin: 0 auto;
+        padding: 0;
+    }
+
+    .profile-layout {
+        display: grid;
+        grid-template-columns: 350px 1fr;
+        gap: 2rem;
+        align-items: start;
+    }
+
+    .profile-sidebar {
+        position: sticky;
+        top: 2rem;
+    }
+
+    .profile-card .card-header {
+        background: #4a90e2;
+        color: white;
+        padding: 1rem;
+        border-radius: 8px 8px 0 0;
+        margin: -2rem -2rem 1.5rem -2rem;
+        text-align: center;
+    }
+
+    .profile-card .card-header h2 {
+        margin: 0;
+        font-size: 1.3rem;
+    }
+
+    .profile-info {
+        text-align: center;
+        margin-bottom: 2rem;
+    }
+
     .avatar-placeholder {
-        width: 80px;
-        height: 80px;
+        width: 100px;
+        height: 100px;
         border-radius: 50%;
-        background-color: #375a7f;
+        background: linear-gradient(135deg, #4a90e2, #357abd);
         color: white;
         display: flex;
         align-items: center;
         justify-content: center;
-        margin: 0 auto;
+        margin: 0 auto 1rem auto;
+        box-shadow: 0 4px 20px rgba(74, 144, 226, 0.3);
     }
-    
-    /* Improve text visibility on dark backgrounds */
-    .text-light-emphasis {
-        color: #adb5bd !important;
+
+    .avatar-letter {
+        font-size: 2.5rem;
+        font-weight: bold;
     }
-    
-    .list-group-item-action:hover {
-        background-color: #2c3136 !important;
+
+    .username {
+        margin: 0 0 1.5rem 0;
+        color: #e0e0e0;
+        font-size: 1.5rem;
     }
-    
-    /* Make sure links are visible in dark theme */
-    .list-group-item a {
-        color: #6ea8fe;
+
+    .user-stats {
+        display: flex;
+        justify-content: space-between;
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-item {
+        text-align: center;
+        flex: 1;
+        padding: 0.60rem;
+        background: rgba(74, 144, 226, 0.1);
+        border-radius: 6px;
+        border: 1px solid rgba(74, 144, 226, 0.2);
+    }
+
+    .stat-number {
+        display: block;
+        font-size: 1.5rem;
+        font-weight: bold;
+        color: #4a90e2;
+    }
+
+    .stat-label {
+        display: block;
+        font-size: 0.8rem;
+        color: #888;
+        margin-top: 0.25rem;
+    }
+
+    .profile-details {
+        text-align: left;
+        margin-bottom: 2rem;
+    }
+
+    .detail-section {
+        margin-bottom: 1.5rem;
+    }
+
+    .detail-section h5 {
+        color: #4a90e2;
+        margin-bottom: 0.5rem;
+        font-size: 1rem;
+        font-weight: 600;
+    }
+
+    .detail-section p {
+        margin: 0;
+        color: #ccc;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .bio {
+        font-style: italic;
+    }
+
+    .profile-actions {
+        display: flex;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #4a90e2;
+    }
+
+    .card-header h2, .card-header h3 {
+        margin: 0;
+        color: #4a90e2;
+        font-size: 1.4rem;
+    }
+
+    .rooms-grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
+    }
+
+    .room-card {
+        background: #353535;
+        border-radius: 8px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid #444;
+    }
+
+    .room-card:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+        border-color: #4a90e2;
+    }
+
+    .owned-room {
+        border-left: 4px solid #28a745;
+    }
+
+    .room-link {
+        display: block;
+        text-decoration: none;
+        color: inherit;
+        padding: 1.5rem;
+    }
+
+    .room-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+        margin-bottom: 1rem;
+        gap: 1rem;
+    }
+
+    .room-name {
+        margin: 0;
+        color: #e0e0e0;
+        font-size: 1.1rem;
+        font-weight: 600;
+        flex: 1;
+    }
+
+    .room-badges {
+        display: flex;
+        flex-direction: column;
+        gap: 0.25rem;
+        align-items: flex-end;
+    }
+
+    .badge {
+        padding: 0.25rem 0.5rem;
+        border-radius: 12px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .badge-rank {
+        background: #6f42c1;
+        color: white;
+    }
+
+    .badge-danger {
+        background: #dc3545;
+        color: white;
+    }
+
+    .badge-success {
+        background: #28a745;
+        color: white;
+    }
+
+    .badge-owner {
+        background: #ffc107;
+        color: #000;
+    }
+
+    .room-description {
+        color: #aaa;
+        font-size: 0.9rem;
+        line-height: 1.4;
+        margin: 0 0 1rem 0;
+    }
+
+    .room-meta {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        color: #888;
+        font-size: 0.8rem;
+    }
+
+    .room-meta span {
+        display: flex;
+        align-items: center;
+        gap: 0.25rem;
+    }
+
+    .icon {
+        font-size: 0.9rem;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 3rem 1rem;
+        color: #888;
+    }
+
+    .empty-icon {
+        font-size: 4rem;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state h4 {
+        color: #ccc;
+        margin-bottom: 1rem;
+    }
+
+    .empty-state p {
+        margin-bottom: 2rem;
+        font-size: 0.9rem;
+    }
+
+    .activity-list {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+    }
+
+    .activity-item {
+        padding: 1rem;
+        background: #353535;
+        border-radius: 6px;
+        border-left: 3px solid #4a90e2;
+    }
+
+    .activity-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 0.5rem;
+        font-size: 0.8rem;
+        color: #888;
+        gap: 1rem;
+    }
+
+    .activity-room a {
+        color: #4a90e2;
         text-decoration: none;
     }
-    
-    .list-group-item a:hover {
+
+    .activity-room a:hover {
         text-decoration: underline;
+    }
+
+    .activity-content p {
+        margin: 0;
+        color: #ccc;
+        font-size: 0.9rem;
+        line-height: 1.4;
+    }
+
+    .btn {
+        display: inline-block;
+        padding: 0.6rem 1.2rem;
+        background: #4a90e2;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        text-align: center;
+    }
+
+    .btn:hover {
+        background: #357abd;
+        transform: translateY(-1px);
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background: #545b62;
+    }
+
+    .btn-success {
+        background: #28a745;
+    }
+
+    .btn-success:hover {
+        background: #218838;
+    }
+
+    .alert {
+        padding: 1rem;
+        border-radius: 6px;
+        margin-bottom: 1rem;
+    }
+
+    .alert-warning {
+        background: rgba(255, 193, 7, 0.1);
+        border: 1px solid rgba(255, 193, 7, 0.3);
+        color: #ffc107;
+    }
+
+    .text-muted {
+        color: #888;
+        text-align: center;
+        padding: 2rem;
+        font-style: italic;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .profile-layout {
+            grid-template-columns: 1fr;
+            gap: 1.5rem;
+        }
+        
+        .profile-sidebar {
+            position: static;
+        }
+        
+        .rooms-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .user-stats {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+        
+        .room-header {
+            flex-direction: column;
+            align-items: flex-start;
+        }
+        
+        .room-badges {
+            flex-direction: row;
+            align-items: flex-start;
+        }
+        
+        .activity-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.25rem;
+        }
+        
+        .profile-actions {
+            flex-direction: row;
+        }
     }
 </style>
 {% endblock %}

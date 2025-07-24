@@ -8,6 +8,16 @@ class CustomUser(AbstractUser):
     last_online = models.DateTimeField(null=True, blank=True)  # Store last online time
     def __str__(self):
         return  str(self.username)
+    
+    @property
+    def total_hours(self):
+        tasks = self.todos.all()
+        hour = 0
+        for task in tasks:
+            hour += task.total_hours
+        return hour
+
+
 
 
 class Profile(models.Model):

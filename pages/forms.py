@@ -1,5 +1,6 @@
 from django import forms
 from .models import Room
+from django.contrib.auth.hashers import make_password 
 
 class RoomJoinForm(forms.Form):
     name = forms.CharField(max_length=100)
@@ -18,3 +19,15 @@ class RoomJoinForm(forms.Form):
         raise forms.ValidationError("Wrong Password. Check again")
 
     
+class ChangeRoomPasswordForm(forms.Form):
+    current_password = forms.CharField(widget=forms.PasswordInput, required=False)
+    new_password = forms.CharField(widget=forms.PasswordInput)
+    confirm_password = forms.CharField(widget=forms.PasswordInput)
+
+    def clean(self):
+        cleaned_data = super().clean()
+        new = cleaned_data.get("new_password")
+        confirm = cleaned_data.get("confirm_password")
+
+        if new != confirm:
+            self.add_error('confirm_password', 'Passwords do not match.')

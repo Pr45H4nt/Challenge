@@ -10,5 +10,5 @@ class CustomUserCreationForm(UserCreationForm):
 
 class PassChangeForm(forms.Form):
     old_password = forms.CharField(widget=forms.PasswordInput, min_length=8)
-    pass1 = forms.CharField(widget=forms.PasswordInput, min_length=8)
-    pass2 = forms.CharField(widget=forms.PasswordInput, min_length=8)
+    new_password = forms.CharField(widget=forms.PasswordInput, min_length=8)
+    confirm_password = forms.CharField(widget=forms.PasswordInput, min_length=8)

@@ -1,119 +1,210 @@
 {% extends 'base.html' %}
 {% block title %}Sign Up - Challenge{% endblock %}
+
 {% block content %}
-<div class="d-flex justify-content-center align-items-center" style="min-height: 100vh; background-color: #0d1117;">
-  <div class="card bg-dark text-light p-4 shadow-lg" style="width: 420px; border-radius: 16px; border: 1px solid #30363d;">
-    <h2 class="text-center mb-4 fw-bold">Sign Up</h2>
-    
-    {% if messages %}
-      <div class="mb-3">
-        {% for message in messages %}
-          <div class="alert alert-{{ message.tags }} alert-dismissible fade show" role="alert">
-            {{ message }}
-            <button type="button" class="btn-close" data-bs-dismiss="alert" aria-label="Close"></button>
-          </div>
-        {% endfor %}
-      </div>
-    {% endif %}
-    
-    <form method="POST" class="needs-validation" novalidate>
-      {% csrf_token %}
-      
-      <div class="mb-3">
-        <label for="id_username" class="form-label">Username</label>
-        <input type="text" name="username" id="id_username" class="form-control bg-dark text-light border-secondary" placeholder="Choose a username" required>
-        {% if form.username.errors %}
-          <div class="text-danger mt-1 small">{{ form.username.errors }}</div>
+<style>
+    body {
+        background-color: #0d1117;
+        color: #c9d1d9;
+        font-family: 'Segoe UI', sans-serif;
+    }
+
+    .signup-container {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        min-height: 100vh;
+        padding: 20px;
+    }
+
+    .signup-card {
+        background-color: #161b22;
+        border: 1px solid #30363d;
+        border-radius: 12px;
+        width: 100%;
+        max-width: 420px;
+        padding: 30px;
+        box-shadow: 0 0 16px rgba(0, 0, 0, 0.6);
+    }
+
+    .signup-card h2 {
+        text-align: center;
+        margin-bottom: 20px;
+        color: #ffffff;
+    }
+
+    .form-group {
+        margin-bottom: 16px;
+    }
+
+    .form-group label {
+        display: block;
+        margin-bottom: 6px;
+        color: #c9d1d9;
+    }
+
+    .form-control {
+        width: 100%;
+        padding: 10px 12px;
+        border: 1px solid #30363d;
+        border-radius: 8px;
+        background-color: #0d1117;
+        color: #ffffff;
+        font-size: 14px;
+    }
+
+    .form-control:focus {
+        outline: none;
+        border-color: #2563eb;
+        box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.4);
+    }
+
+    .input-group {
+        display: flex;
+        align-items: center;
+    }
+
+    .input-group button {
+        padding: 10px 12px;
+        background-color: transparent;
+        color: #c9d1d9;
+        border: 1px solid #30363d;
+        border-left: none;
+        border-radius: 0 8px 8px 0;
+        cursor: pointer;
+    }
+
+    .input-group input {
+        border-radius: 8px 0 0 8px;
+        border-right: none;
+        flex-grow: 1;
+    }
+
+    .alert {
+        background-color: #da3633;
+        color: #fff;
+        padding: 10px 14px;
+        border-radius: 6px;
+        font-size: 14px;
+        margin-bottom: 16px;
+    }
+
+    .text-danger {
+        color: #ff7b72;
+        font-size: 13px;
+    }
+
+    .form-text {
+        font-size: 12px;
+        color: #8b949e;
+    }
+
+    .btn-submit {
+        width: 100%;
+        padding: 12px;
+        background-color: #2563eb;
+        border: none;
+        border-radius: 8px;
+        color: white;
+        font-weight: bold;
+        font-size: 15px;
+        cursor: pointer;
+        transition: background-color 0.3s ease;
+    }
+
+    .btn-submit:hover {
+        background-color: #1d4ed8;
+    }
+
+    .text-center {
+        text-align: center;
+    }
+
+    a {
+        color: #58a6ff;
+        text-decoration: none;
+    }
+
+    a:hover {
+        text-decoration: underline;
+    }
+</style>
+
+<div class="signup-container">
+    <div class="signup-card">
+        <h2>Sign Up</h2>
+
+        {% if messages %}
+            {% for message in messages %}
+                <div class="alert">{{ message }}</div>
+            {% endfor %}
         {% endif %}
-      </div>
-      
-      <div class="mb-3">
-        <label for="id_email" class="form-label">Email</label>
-        <input type="email" name="email" id="id_email" class="form-control bg-dark text-light border-secondary" placeholder="Your email address">
-        {% if form.email.errors %}
-          <div class="text-danger mt-1 small">{{ form.email.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-3">
-        <label for="id_age" class="form-label">Age</label>
-        <input type="number" name="age" id="id_age" class="form-control bg-dark text-light border-secondary" placeholder="Your age">
-        {% if form.age.errors %}
-          <div class="text-danger mt-1 small">{{ form.age.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <div class="mb-3">
-        <label for="id_password1" class="form-label">Password</label>
-        <div class="input-group">
-          <input type="password" name="password1" id="id_password1" class="form-control bg-dark text-light border-secondary" placeholder="Create a password" required>
-          <button class="btn btn-outline-secondary border-secondary" type="button" id="togglePassword1">
-            <i class="fas fa-eye-slash"></i>
-          </button>
+
+        <form method="POST" novalidate>
+            {% csrf_token %}
+
+            <div class="form-group">
+                <label for="id_username">Username</label>
+                <input type="text" name="username" id="id_username" class="form-control" placeholder="Choose a username" required>
+                {% if form.username.errors %}
+                    <div class="text-danger">{{ form.username.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_email">Email</label>
+                <input type="email" name="email" id="id_email" class="form-control" placeholder="Your email address">
+                {% if form.email.errors %}
+                    <div class="text-danger">{{ form.email.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_age">Age</label>
+                <input type="number" name="age" id="id_age" class="form-control" placeholder="Your age">
+                {% if form.age.errors %}
+                    <div class="text-danger">{{ form.age.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <div class="form-group">
+                <label for="id_password1">Password</label>
+                <div class="input-group">
+                    <input type="password" name="password1" id="id_password1" class="form-control" placeholder="Create a password" required>
+                    <button type="button" onclick="toggleVisibility('id_password1', this)">👁</button>
+                </div>
+                {% if form.password1.errors %}
+                    <div class="text-danger">{{ form.password1.errors.0 }}</div>
+                {% endif %}
+                <div class="form-text">Password must be at least 8 characters and include numbers and letters.</div>
+            </div>
+
+            <div class="form-group">
+                <label for="id_password2">Confirm Password</label>
+                <div class="input-group">
+                    <input type="password" name="password2" id="id_password2" class="form-control" placeholder="Confirm your password" required>
+                    <button type="button" onclick="toggleVisibility('id_password2', this)">👁</button>
+                </div>
+                {% if form.password2.errors %}
+                    <div class="text-danger">{{ form.password2.errors.0 }}</div>
+                {% endif %}
+            </div>
+
+            <button type="submit" class="btn-submit">Sign Up</button>
+        </form>
+
+        <div class="text-center mt-4">
+            <p>Already have an account? <a href="{% url 'login' %}">Login</a></p>
         </div>
-        {% if form.password1.errors %}
-          <div class="text-danger mt-1 small">{{ form.password1.errors }}</div>
-        {% endif %}
-        <div class="form-text text-light-emphasis small mt-2">Password must be at least 8 characters and include numbers and letters.</div>
-      </div>
-      
-      <div class="mb-4">
-        <label for="id_password2" class="form-label">Confirm Password</label>
-        <div class="input-group">
-          <input type="password" name="password2" id="id_password2" class="form-control bg-dark text-light border-secondary" placeholder="Confirm your password" required>
-          <button class="btn btn-outline-secondary border-secondary" type="button" id="togglePassword2">
-            <i class="fas fa-eye-slash"></i>
-          </button>
-        </div>
-        {% if form.password2.errors %}
-          <div class="text-danger mt-1 small">{{ form.password2.errors }}</div>
-        {% endif %}
-      </div>
-      
-      <button type="submit" class="btn btn-primary w-100 py-2 fw-bold" style="background-color: #2563eb; border: none;">Sign Up</button>
-    </form>
-    
-    <div class="mt-4 text-center">
-      <p class="mb-0">Already have an account? <a href="{% url 'login' %}" class="text-decoration-none text-primary fw-bold">Login</a></p>
     </div>
-  </div>
 </div>
 
-{% block extra_js %}
 <script>
-  document.addEventListener('DOMContentLoaded', function() {
-    // Password visibility toggle
-    const togglePassword1 = document.getElementById('togglePassword1');
-    const togglePassword2 = document.getElementById('togglePassword2');
-    const password1 = document.getElementById('id_password1');
-    const password2 = document.getElementById('id_password2');
-    
-    togglePassword1.addEventListener('click', function() {
-      const type = password1.getAttribute('type') === 'password' ? 'text' : 'password';
-      password1.setAttribute('type', type);
-      this.querySelector('i').classList.toggle('fa-eye');
-      this.querySelector('i').classList.toggle('fa-eye-slash');
-    });
-    
-    togglePassword2.addEventListener('click', function() {
-      const type = password2.getAttribute('type') === 'password' ? 'text' : 'password';
-      password2.setAttribute('type', type);
-      this.querySelector('i').classList.toggle('fa-eye');
-      this.querySelector('i').classList.toggle('fa-eye-slash');
-    });
-    
-    // Form validation
-    const form = document.querySelector('.needs-validation');
-    
-    form.addEventListener('submit', function(event) {
-      if (!form.checkValidity()) {
-        event.preventDefault();
-        event.stopPropagation();
-      }
-      
-      form.classList.add('was-validated');
-    });
-  });
+    function toggleVisibility(id, btn) {
+        const input = document.getElementById(id);
+        const type = input.getAttribute('type') === 'password' ? 'text' : 'password';
+        input.setAttribute('type', type);
+        btn.textContent = type === 'password' ? '👁' : '🙈';
+    }
 </script>
-{% endblock %}
 {% endblock %}
