@@ -13,6 +13,7 @@ class RoomJoinForm(forms.Form):
         if not room:
             raise forms.ValidationError(f"Room does not exist by the name {cleaned_data['name']}")
         
+        print('This is the pass: ', password)
         if room.check_pass(password):
             cleaned_data['room'] = room
             return cleaned_data

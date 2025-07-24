@@ -120,14 +120,14 @@ class ChangeRoomPasswordView(NotDemoUserMixin, LoginRequiredMixin, AdminPermRequ
 
             if not room.check_pass(current):
                 form.add_error('current_password', 'Current password is incorrect.')
-                return redirect('change_room_password', room_id=room.id)
-
+                # return redirect('change-room-pass', room_id=room.id)
+            else:
             # Save new password
-            room.password = new_pass
-            room.hash_pass()
-            room.save()
-            messages.success(request, "Password updated successfully.")
-            return redirect('room', room_id=room.id)
+                room.password = new_pass
+                room.hash_pass()
+                room.save()
+                messages.success(request, "Password updated successfully.")
+                return redirect('room', room_id=room.id)
 
         return render(request, self.template_name, {'form': form, 'room': room})
 

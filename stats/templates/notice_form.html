@@ -298,7 +298,7 @@ box-shadow: none;
 <div class="checkbox-group">
 <input type="checkbox" name="{{ form.is_admin.name }}" id="{{ form.is_admin.id_for_label }}" 
        {% if form.is_admin.value %}checked{% endif %}>
-<label for="{{ form.is_admin.id_for_label }}">Admin notice (only admins can see)</label>
+<label for="{{ form.is_admin.id_for_label }}">Admin notice (create notice as an admin)</label>
 </div>
 {% if form.is_admin.errors %}
 <div class="field-error">

@@ -1,6 +1,6 @@
 from django.db import models
 from authapp.models import CustomUser
-from django.contrib.auth.hashers import make_password , check_password, is_password_usable
+from django.contrib.auth.hashers import make_password , check_password, is_password_usable, identify_hasher
 from django.core.exceptions import ValidationError
 import uuid
 from django.utils import timezone
@@ -17,20 +17,34 @@ class Room(models.Model):
     created_on = models.DateTimeField(auto_now_add=True)
     admin = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_rooms')
 
+    def is_hashed(self,password):
+        try:
+            identify_hasher(password)
+            return True
+        except ValueError:
+            return False
+
     def hash_pass(self):
         if self.password:
             hashed_pass = make_password(self.password)
             self.password = hashed_pass
 
     def save(self, *args, **kwargs):
-        if self.password and not is_password_usable(self.password):
+        if self.password and not self.is_hashed(self.password):
             self.hash_pass()
-        return super().save(*args, **kwargs)
+        super().save(*args, **kwargs)
     
     def check_pass(self, given_pass):
+        print(self.password)
         if self.password:
-            return check_password(given_pass,self.password )
+            return check_password(given_pass, self.password )
         return True
+
+
+        
+
+
+
     
     @property
     def total_hours(self):
