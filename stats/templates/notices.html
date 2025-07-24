@@ -1,0 +1,1027 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.name }} - Notice Board{% endblock %}
+
+    
+{% block content %}
+<center><a class="back-btn" href="{% url 'room' room_id=room.id %}"><-Back to room</a></center>
+
+
+<div class="notice-board-container">
+    <!-- Header Section -->
+    <div class="content-block notice-header">
+        <div class="header-content">
+            <div class="header-info">
+                <h1 class="board-title">📋 {{ room.name }} Notice Board</h1>
+                <p class="board-description">Stay updated with the latest announcements and important information</p>
+                <div class="board-stats">
+                    <span class="stat-item">
+                        <i class="icon">📌</i>
+                        <span class="stat-number">{{ pinned_count|default:0 }}</span>
+                        <span class="stat-label">Pinned</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="icon">📄</i>
+                        <span class="stat-number">{{ total_notices|default:0 }}</span>
+                        <span class="stat-label">Total Notices</span>
+                    </span>
+                    <span class="stat-item">
+                        <i class="icon">🆕</i>
+                        <span class="stat-number">{{ today_notices|default:0 }}</span>
+                        <span class="stat-label">Today</span>
+                    </span>
+                </div>
+            </div>
+            <div class="header-actions">
+                {% if user.is_authenticated and user in room.members.all or user == room.admin %}
+                    <a href="{% url 'add-notice' room_id=room.id %}" class="btn btn-primary">
+                        <i class="icon">➕</i> Create Notice
+                    </a>
+                {% endif %}
+                <button class="btn btn-secondary" id="filterToggle">
+                    <i class="icon">🔍</i> Filter
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Filter Section -->
+    <div class="content-block filter-section" id="filterSection" style="display: none;">
+        <div class="filter-content">
+            <div class="filter-row">
+                <div class="filter-group">
+                    <label for="searchInput">Search Notices</label>
+                    <input type="text" id="searchInput" placeholder="Search by title or content..." class="filter-input">
+                </div>
+                <div class="filter-group">
+                    <label for="authorFilter">Author</label>
+                    <select id="authorFilter" class="filter-select">
+                        <option value="">All Authors</option>
+                        {% for author in authors %}
+                            <option value="{{ author.username }}">{{ author.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="dateFilter">Date Range</label>
+                    <select id="dateFilter" class="filter-select">
+                        <option value="">All Time</option>
+                        <option value="today">Today</option>
+                        <option value="week">This Week</option>
+                        <option value="month">This Month</option>
+                    </select>
+                </div>
+                <div class="filter-group">
+                    <label for="pinnedFilter">Status</label>
+                    <select id="pinnedFilter" class="filter-select">
+                        <option value="">All Notices</option>
+                        <option value="pinned">Pinned Only</option>
+                        <option value="unpinned">Regular Only</option>
+                    </select>
+                </div>
+            </div>
+            <div class="filter-actions">
+                <button class="btn btn-primary" id="applyFilter">Apply Filters</button>
+                <button class="btn btn-secondary" id="clearFilter">Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Notices Container -->
+    <div class="notices-container">
+        {% if notices %}
+            <!-- Pinned Notices -->
+            {% if pinned_notices %}
+            
+            
+            <div class="content-block pinned-section">
+                <div class="section-header">
+                    <h2 class="section-title">📌 Pinned Notices</h2>
+                    <span class="section-count">{{ pinned_notices|length }}</span>
+                </div>
+                <div class="notices-grid pinned-grid">
+                    {% for notice in pinned_notices %}
+                        
+                            <div class="notice-card pinned-notice" data-notice-id="{{ notice.id }}" 
+                                 data-author="{{ notice.author.username|default:'System' }}" 
+                                 data-date="{{ notice.created_on|date:'Y-m-d' }}"
+                                 data-title="{{ notice.title|lower }}" 
+                                 data-content="{{ notice.content|lower }}">
+                                <div class="notice-header">
+                                    <div class="notice-meta">
+                                        <span class="notice-pin">📌</span>
+                                        <span class="notice-author">{% if notice.is_admin %}ADMIN: {% endif %}{{ notice.author.username|default:"System" }}</span>
+                                        <span class="notice-date">{{ notice.created_on|date:"M d, Y" }}</span>
+                                        {% if notice.is_posted_today %}
+                                            <span class="badge badge-today">Today</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if user == notice.author or user == room.admin %}
+                                        <div class="notice-actions">
+                                            <button class="action-btn pin-btn" onclick="togglePin('{{ notice.id }}')" aria-label="Unpin">
+                                            <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" fill="currentColor" viewBox="0 0 24 24" >
+                                                <path d="M20 14.274V15h-7v7l-.5 1-.5-1v-6.172L13.828 14h5.163c-.051-.65-.332-.856-1.333-1.515L16.93 12h-1.1l1.16-1.161.927.618c1.302.868 2.084 1.252 2.084 2.817zm2.4-10.966L3.307 22.399l-.707-.707L9.293 15H5v-.726c0-1.565.782-1.95 2.084-2.817l1.147-.765L10 4l-1.522-.43A2.029 2.029 0 0 1 7 1.619V1h11v.618a2.029 2.029 0 0 1-1.478 1.953L15 4l1.107 4.186L21.692 2.6zM10.137 3h4.724l1.388-.392A1.033 1.033 0 0 0 16.926 2H8.074a1.033 1.033 0 0 0 .676.608zm-.954 8h4.109l1.995-1.995L13.966 4h-2.931zm1.109 3l2-2H8.07l-.73.485c-1 .659-1.28.866-1.332 1.515z"/>
+                                                <path fill="none" d="M0 0h24v24H0z"/>
+                                            </svg>
+                                            </button>
+
+                                            <a href="{% url 'delete-notice' notice_id=notice.id %}" role="button">
+                                                <i class="icon">🗑️</i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="notice-content">
+                                    <h3 class="notice-title">
+                                        {% if notice.is_html %}
+                                            <span>{{ notice.title|safe }}</span>
+                                        {% else %}
+                                            {{ notice.title }}
+                                        {% endif %}
+                                    </h3>
+                                    <div class="notice-body">
+                                        {% if notice.is_html %}
+                                            <div>{{ notice.content|safe|linebreaks|truncatewords:10 }}</div>
+                                            <div class="full-content" style="display:none;">{{ notice.content|safe|linebreaks }}</div>
+                                        {% else %}
+                                            <p>{{ notice.content|linebreaks|truncatewords:10 }}</p>
+                                            <div class="full-content" style="display:none;">{{ notice.content|linebreaks }}</div>
+                                        {% endif %}
+
+
+                                    </div>
+                                </div>
+                                <div class="notice-footer">
+                                    <span class="notice-time">{{ notice.created_on|timesince }} ago</span>
+                                    <button class="btn btn-sm btn-outline expand-btn" onclick="toggleNotice(this)">
+                                        <i class="icon">📖</i> Read More
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+
+            <!-- Regular Notices -->
+            {% if regular_notices %}
+                <div class="content-block regular-section">
+                    <div class="section-header">
+                        <h2 class="section-title">📄 Recent Notices</h2>
+                        <span class="section-count">{{ regular_notices|length }}</span>
+                    </div>
+                    <div class="notices-grid">
+                        {% for notice in regular_notices %}
+                            <div class="notice-card" data-notice-id="{{ notice.id }}" 
+                                 data-author="{{ notice.author.username|default:'System' }}" 
+                                 data-date="{{ notice.created_on|date:'Y-m-d' }}"
+                                 data-title="{{ notice.title|lower }}" 
+                                 data-content="{{ notice.content|lower }}">
+                                <div class="notice-header">
+                                    <div class="notice-meta">
+                                        <span class="notice-author">{{ notice.author.username|default:"System" }}</span>
+                                        <span class="notice-date">{{ notice.created_on|date:"M d, Y" }}</span>
+                                        {% if notice.is_posted_today %}
+                                            <span class="badge badge-today">Today</span>
+                                        {% endif %}
+                                    </div>
+                                    {% if user == notice.author or user == room.admin %}
+                                        <div class="notice-actions">
+                                            <button class="action-btn pin-btn" onclick="togglePin('{{ notice.id }}')">
+                                                <i class="icon">📌</i>
+                                            </button>
+                                            <!-- <button class="action-btn edit-btn" onclick="editNotice('{{ notice.id }}')">
+                                                <i class="icon">✏️</i>
+                                            </button> -->
+                                            <a href="{% url 'delete-notice' notice_id=notice.id %}" role="button">
+                                                <i class="icon">🗑️</i>
+                                            </a>
+                                        </div>
+                                    {% endif %}
+                                </div>
+                                <div class="notice-content">
+                                    <h3 class="notice-title">
+                                        {% if notice.is_html %}
+                                            <span>{{ notice.title|safe }}</span>
+                                        {% else %}
+                                            {{ notice.title }}
+                                        {% endif %}
+                                    </h3>
+
+                                    <div class="notice-body">
+                                        {% if notice.is_html %}
+                                            <div>{{ notice.content|safe|linebreaks|truncatewords:10 }}</div>
+                                             <div class="full-content" style="display:none;">{{ notice.content|safe|linebreaks }}</div>
+                                            {% else %}
+                                            <p>{{ notice.content|truncatewords:30|linebreaks }}</p>
+                                            <div class="full-content" style="display:none;">{{ notice.content|linebreaks }}</div>
+                                            
+                                            {% endif %}
+
+                                    </div>
+                                </div>
+                                <div class="notice-footer">
+                                    <span class="notice-time">{{ notice.created_on|timesince }} ago</span>
+                                    <button class="btn btn-sm btn-outline expand-btn" onclick="toggleNotice(this)">
+                                        <i class="icon">📖</i> Read More
+                                    </button>
+                                </div>
+                            </div>
+                        {% endfor %}
+                    </div>
+                </div>
+            {% endif %}
+        {% else %}
+            <!-- Empty State -->
+            <div class="content-block empty-state">
+                <div class="empty-content">
+                    <div class="empty-icon">📋</div>
+                    <h3>No Notices Yet</h3>
+                    <p>Be the first to post a notice in this room!</p>
+                    {% if user.is_authenticated and user in room.members.all or user == room.admin %}
+                        <a href="" class="btn btn-primary">
+                            <i class="icon">➕</i> Create First Notice
+                        </a>
+                    {% endif %}
+                </div>
+            </div>
+        {% endif %}
+    </div>
+</div>
+
+<!-- Notice Detail Modal -->
+<div id="noticeModal" class="modal" style="display: none;">
+    <div class="modal-content">
+        <div class="modal-header">
+            <h3 id="modalTitle"></h3>
+            <button class="close-btn" onclick="closeModal()">&times;</button>
+        </div>
+        <div class="modal-body">
+            <div class="modal-meta">
+                <span class="modal-author"></span>
+                <span class="modal-date"></span>
+            </div>
+            <div id="modalContent"></div>
+        </div>
+    </div>
+</div>
+
+<div class="pagination">
+  {% if is_paginated %}
+    <ul class="pagination-list">
+      {% if page_obj.has_previous %}
+        <li><a href="?page={{ page_obj.previous_page_number }}">« Prev</a></li>
+      {% endif %}
+
+      {% for num in paginator.page_range %}
+        {% if page_obj.number == num %}
+          <li><strong>{{ num }}</strong></li>
+        {% elif num >= page_obj.number|add:'-2' and num <= page_obj.number|add:'2' %}
+          <li><a href="?page={{ num }}">{{ num }}</a></li>
+        {% endif %}
+      {% endfor %}
+
+      {% if page_obj.has_next %}
+        <li><a href="?page={{ page_obj.next_page_number }}">Next »</a></li>
+      {% endif %}
+    </ul>
+  {% endif %}
+</div>
+
+<style>
+.pagination-list {
+  display: flex;
+  list-style: none;
+  gap: 8px;
+  padding: 0;
+}
+.pagination-list li a, .pagination-list li strong {
+  padding: 6px 10px;
+  background: #222;
+  color: #fff;
+  border-radius: 4px;
+  text-decoration: none;
+}
+.pagination-list li strong {
+  background: #4caf50;
+}
+</style>
+
+
+<style>
+    .back-btn{
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: #e24a4a;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+        margin-bottom: 1.5rem;
+    }
+
+    .notice-title a {
+    color: #4a90e2;
+    text-decoration: none;
+    transition: color 0.3s ease;
+    font-weight: 600;
+}
+
+.notice-title a:hover {
+    color: #6ab0f3;
+    text-decoration: underline;
+}
+    .notice-body a {
+    color: #4a90e2; /* or any accent color that fits your theme */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+.notice-body a:hover {
+    color: #6ab0f3; /* lighter shade on hover */
+    text-decoration: underline;
+}
+
+#modalContent a {
+    color: #4a90e2; /* match your accent color */
+    text-decoration: none;
+    font-weight: 500;
+    transition: color 0.3s ease;
+}
+
+#modalContent a:hover {
+    color: #6ab0f3;
+    text-decoration: underline;
+}
+
+
+    .notice-board-container {
+        max-width: 1200px;
+        margin: 0 auto;
+    }
+
+    .notice-header {
+        background: linear-gradient(135deg, #4a90e2 0%, #357abd 100%);
+        color: white;
+        margin-bottom: 2rem;
+    }
+
+    .header-content {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        gap: 2rem;
+    }
+
+    .header-info {
+        flex: 1;
+    }
+
+    .board-title {
+        margin: 0 0 0.5rem 0;
+        font-size: 2rem;
+        font-weight: bold;
+    }
+
+    .board-description {
+        margin: 0 0 1.5rem 0;
+        opacity: 0.9;
+        font-size: 1.1rem;
+    }
+
+    .board-stats {
+        display: flex;
+        gap: 2rem;
+    }
+
+    .stat-item {
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+        background: rgba(255, 255, 255, 0.1);
+        padding: 0.5rem 1rem;
+        border-radius: 20px;
+        backdrop-filter: blur(10px);
+    }
+
+    .stat-number {
+        font-weight: bold;
+        font-size: 1.1rem;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        opacity: 0.9;
+    }
+
+    .header-actions {
+        display: flex;
+        gap: 1rem;
+        align-items: center;
+    }
+
+    .filter-section {
+        margin-bottom: 2rem;
+        background: #353535;
+        border: 1px solid #444;
+    }
+
+    .filter-content {
+        display: flex;
+        flex-direction: column;
+        gap: 1.5rem;
+    }
+
+    .filter-row {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+    }
+
+    .filter-group {
+        display: flex;
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+
+    .filter-group label {
+        font-size: 0.9rem;
+        font-weight: 600;
+        color: #4a90e2;
+    }
+
+    .filter-input, .filter-select {
+        padding: 0.6rem;
+        background: #2d2d2d;
+        border: 1px solid #444;
+        border-radius: 6px;
+        color: #e0e0e0;
+        font-size: 0.9rem;
+    }
+
+    .filter-input:focus, .filter-select:focus {
+        outline: none;
+        border-color: #4a90e2;
+    }
+
+    .filter-actions {
+        display: flex;
+        gap: 1rem;
+        justify-content: flex-end;
+    }
+
+    .section-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1.5rem;
+        padding-bottom: 1rem;
+        border-bottom: 2px solid #4a90e2;
+    }
+
+    .section-title {
+        margin: 0;
+        color: #4a90e2;
+        font-size: 1.5rem;
+    }
+
+    .section-count {
+        background: #4a90e2;
+        color: white;
+        padding: 0.25rem 0.75rem;
+        border-radius: 12px;
+        font-size: 0.8rem;
+        font-weight: 600;
+    }
+
+    .notices-grid {
+        display: grid;
+        gap: 1.5rem;
+        grid-template-columns: repeat(auto-fill, minmax(350px, 1fr));
+    }
+
+    .pinned-grid {
+        grid-template-columns: repeat(auto-fill, minmax(400px, 1fr));
+    }
+
+    .notice-card {
+        background: #353535;
+        border-radius: 12px;
+        overflow: hidden;
+        transition: all 0.3s ease;
+        border: 1px solid #444;
+        position: relative;
+    }
+
+    .notice-card:hover {
+        transform: translateY(-4px);
+        box-shadow: 0 12px 30px rgba(0, 0, 0, 0.4);
+        border-color: #4a90e2;
+    }
+
+    .pinned-notice {
+        border-left: 4px solid #ffc107;
+        background: linear-gradient(135deg, #353535 0%, #3d3d3d 100%);
+    }
+
+    .notice-header {
+        padding: 1rem 1rem 0 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: flex-start;
+    }
+
+    .notice-meta {
+        display: flex;
+        align-items: center;
+        gap: 0.75rem;
+        flex-wrap: wrap;
+    }
+
+    .notice-pin {
+        font-size: 1.1rem;
+    }
+
+    .notice-author {
+        font-weight: 600;
+        color: #ffffff;
+        font-size: 0.9rem;
+    }
+
+    .notice-date {
+        color: #211e1e;
+        font-size: 0.8rem;
+    }
+
+    .badge {
+        padding: 0.2rem 0.5rem;
+        border-radius: 10px;
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+    }
+
+    .badge-today {
+        background: #28a745;
+        color: white;
+    }
+
+    .notice-actions {
+        display: flex;
+        gap: 0.5rem;
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .notice-card:hover .notice-actions {
+        opacity: 1;
+    }
+
+    .action-btn {
+        background: rgba(255, 255, 255, 0.1);
+        border: none;
+        border-radius: 6px;
+        padding: 0.4rem;
+        color: #e0e0e0;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        font-size: 0.8rem;
+    }
+
+    .action-btn:hover {
+        background: rgba(255, 255, 255, 0.2);
+        transform: scale(1.1);
+    }
+
+    .delete-btn:hover {
+        background: #dc3545;
+        color: white;
+    }
+
+    .edit-btn:hover {
+        background: #ffc107;
+        color: black;
+    }
+
+    .pin-btn:hover {
+        background: #ffc107;
+        color: black;
+    }
+
+    .notice-content {
+        padding: 1rem;
+    }
+
+    .notice-title {
+        margin: 0 0 1rem 0;
+        color: #e0e0e0;
+        font-size: 1.2rem;
+        font-weight: 600;
+        line-height: 1.3;
+    }
+
+    .notice-body {
+        color: #ccc;
+        line-height: 1.6;
+        font-size: 0.95rem;
+    }
+
+    .notice-body p {
+        margin-bottom: 1rem;
+    }
+
+    .notice-footer {
+        padding: 0 1rem 1rem 1rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .notice-time {
+        color: #888;
+        font-size: 0.8rem;
+        font-style: italic;
+    }
+
+    .expand-btn {
+        opacity: 0.7;
+    }
+
+    .expand-btn:hover {
+        opacity: 1;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 4rem 2rem;
+    }
+
+    .empty-content {
+        max-width: 400px;
+        margin: 0 auto;
+    }
+
+    .empty-icon {
+        font-size: 5rem;
+        margin-bottom: 1.5rem;
+        opacity: 0.7;
+    }
+
+    .empty-state h3 {
+        color: #e0e0e0;
+        margin-bottom: 1rem;
+        font-size: 1.5rem;
+    }
+
+    .empty-state p {
+        color: #888;
+        margin-bottom: 2rem;
+        font-size: 1.1rem;
+    }
+
+    /* Modal Styles */
+    .modal {
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.8);
+        z-index: 1000;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        backdrop-filter: blur(5px);
+    }
+
+    .modal-content {
+        background: #2d2d2d;
+        border-radius: 12px;
+        max-width: 600px;
+        max-height: 80vh;
+        overflow-y: auto;
+        margin: 2rem;
+        box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+    }
+
+    .modal-header {
+        padding: 1.5rem;
+        border-bottom: 1px solid #444;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+    }
+
+    .modal-header h3 {
+        margin: 0;
+        color: #e0e0e0;
+        font-size: 1.3rem;
+    }
+
+    .close-btn {
+        background: none;
+        border: none;
+        color: #888;
+        font-size: 1.5rem;
+        cursor: pointer;
+        padding: 0.5rem;
+        border-radius: 50%;
+        transition: all 0.3s ease;
+    }
+
+    .close-btn:hover {
+        background: #444;
+        color: #e0e0e0;
+    }
+
+    .modal-body {
+        padding: 1.5rem;
+    }
+
+    .modal-meta {
+        margin-bottom: 1.5rem;
+        display: flex;
+        gap: 1rem;
+        font-size: 0.9rem;
+        color: #888;
+    }
+
+    .modal-author {
+        color: #4a90e2;
+        font-weight: 600;
+    }
+
+    /* Button Styles */
+    .btn {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+        padding: 0.6rem 1.2rem;
+        background: #4a90e2;
+        color: white;
+        text-decoration: none;
+        border-radius: 6px;
+        border: none;
+        cursor: pointer;
+        font-size: 0.9rem;
+        font-weight: 500;
+        transition: all 0.3s ease;
+    }
+
+    .btn:hover {
+        background: #357abd;
+        transform: translateY(-1px);
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+    }
+
+    .btn-sm {
+        padding: 0.4rem 0.8rem;
+        font-size: 0.8rem;
+    }
+
+    .btn-secondary {
+        background: #6c757d;
+    }
+
+    .btn-secondary:hover {
+        background: #545b62;
+    }
+
+    .btn-outline {
+        background: transparent;
+        border: 1px solid #4a90e2;
+        color: #4a90e2;
+    }
+
+    .btn-outline:hover {
+        background: #4a90e2;
+        color: white;
+    }
+
+    .icon {
+        font-size: 1rem;
+    }
+
+    /* Responsive Design */
+    @media (max-width: 1024px) {
+        .header-content {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 1.5rem;
+        }
+
+        .header-actions {
+            width: 100%;
+            justify-content: flex-start;
+        }
+
+        .board-stats {
+            flex-wrap: wrap;
+        }
+
+        .notices-grid, .pinned-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+
+    @media (max-width: 768px) {
+        .board-title {
+            font-size: 1.5rem;
+        }
+
+        .filter-row {
+            grid-template-columns: 1fr;
+        }
+
+        .filter-actions {
+            justify-content: stretch;
+        }
+
+        .filter-actions .btn {
+            flex: 1;
+            justify-content: center;
+        }
+
+        .section-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.5rem;
+        }
+
+        .modal-content {
+            margin: 1rem;
+            max-height: 90vh;
+        }
+
+        .notice-header {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+
+        .notice-actions {
+            opacity: 1;
+        }
+    }
+</style>
+
+<script>
+    // Filter functionality
+    document.getElementById('filterToggle').addEventListener('click', function() {
+        const filterSection = document.getElementById('filterSection');
+        if (filterSection.style.display === 'none') {
+            filterSection.style.display = 'block';
+        } else {
+            filterSection.style.display = 'none';
+        }
+    });
+
+    // Search and filter functionality
+    document.getElementById('applyFilter').addEventListener('click', function() {
+        const searchTerm = document.getElementById('searchInput').value.toLowerCase();
+        const authorFilter = document.getElementById('authorFilter').value;
+        const dateFilter = document.getElementById('dateFilter').value;
+        const pinnedFilter = document.getElementById('pinnedFilter').value;
+
+        const notices = document.querySelectorAll('.notice-card');
+        
+        notices.forEach(function(notice) {
+            let show = true;
+            
+            // Search filter
+            if (searchTerm) {
+                const title = notice.dataset.title;
+                const content = notice.dataset.content;
+                if (!title.includes(searchTerm) && !content.includes(searchTerm)) {
+                    show = false;
+                }
+            }
+            
+            // Author filter
+            if (authorFilter && notice.dataset.author !== authorFilter) {
+                show = false;
+            }
+            
+            // Date filter
+            if (dateFilter) {
+                const noticeDate = new Date(notice.dataset.date);
+                const today = new Date();
+                
+                switch(dateFilter) {
+                    case 'today':
+                        if (noticeDate.toDateString() !== today.toDateString()) {
+                            show = false;
+                        }
+                        break;
+                    case 'week':
+                        const weekAgo = new Date(today.getTime() - 7 * 24 * 60 * 60 * 1000);
+                        if (noticeDate < weekAgo) {
+                            show = false;
+                        }
+                        break;
+                    case 'month':
+                        const monthAgo = new Date(today.getTime() - 30 * 24 * 60 * 60 * 1000);
+                        if (noticeDate < monthAgo) {
+                            show = false;
+                        }
+                        break;
+                }
+            }
+            
+            // Pinned filter
+            if (pinnedFilter === 'pinned' && !notice.classList.contains('pinned-notice')) {
+                show = false;
+            } else if (pinnedFilter === 'unpinned' && notice.classList.contains('pinned-notice')) {
+                show = false;
+            }
+            
+            notice.style.display = show ? 'block' : 'none';
+        });
+    });
+
+    // Clear filters
+    document.getElementById('clearFilter').addEventListener('click', function() {
+        document.getElementById('searchInput').value = '';
+        document.getElementById('authorFilter').value = '';
+        document.getElementById('dateFilter').value = '';
+        document.getElementById('pinnedFilter').value = '';
+        
+        document.querySelectorAll('.notice-card').forEach(function(notice) {
+            notice.style.display = 'block';
+        });
+    });
+
+    // Modal functionality
+    function toggleNotice(button) {
+        const noticeCard = button.closest('.notice-card');
+        const title = noticeCard.querySelector('.notice-title').textContent;
+        const author = noticeCard.dataset.author;
+        const date = noticeCard.querySelector('.notice-date').textContent;
+        const content = noticeCard.querySelector('.full-content').innerHTML;
+        
+        document.getElementById('modalTitle').textContent = title;
+        document.querySelector('.modal-author').textContent = 'By: ' + author;
+        document.querySelector('.modal-date').textContent = date;
+        document.getElementById('modalContent').innerHTML = content;
+        document.getElementById('noticeModal').style.display = 'flex';
+    }
+
+    function closeModal() {
+        document.getElementById('noticeModal').style.display = 'none';
+    }
+
+    // Close modal when clicking outside
+    document.getElementById('noticeModal').addEventListener('click', function(e) {
+        if (e.target === this) {
+            closeModal();
+        }
+    });
+
+    // Notice actions (you'll need to implement these in your backend)
+    function editNotice(noticeId) {
+        window.location.href = `/notices/edit/${noticeId}/`;
+    }
+
+    function togglePin(noticeId) {
+        fetch(`/stats/toggle-pin/${noticeId}/`, {
+            method: 'POST',
+            headers: {
+                'X-CSRFToken': getCookie('csrftoken'),
+                'Content-Type': 'application/json',
+            },
+        }).then(response => {
+            if (response.ok) {
+                location.reload();
+            }
+        });
+    }
+
+    // Helper function to get CSRF token
+    function getCookie(name) {
+        let cookieValue = null;
+        if (document.cookie && document.cookie !== '') {
+            const cookies = document.cookie.split(';');
+            for (let i = 0; i < cookies.length; i++) {
+                const cookie = cookies[i].trim();
+                if (cookie.substring(0, name.length + 1) === (name + '=')) {
+                    cookieValue = decodeURIComponent(cookie.substring(name.length + 1));
+                    break;
+                }
+            }
+        }
+        return cookieValue;
+    }
+
+    // Real-time search
+    document.getElementById('searchInput').addEventListener('input', function() {
+        document.getElementById('applyFilter').click();
+    });
+</script>
+{% endblock %}

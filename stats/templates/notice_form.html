@@ -1,0 +1,392 @@
+{% extends 'base.html' %}
+
+{% block title %}Create Notice - Challenge{% endblock %}
+
+{% block content %}
+<style>
+/* Form Styling */
+.form-container {
+background: #2d2d2d;
+padding: 2rem;
+border-radius: 8px;
+margin-bottom: 2rem;
+box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+max-width: 800px;
+margin: 0 auto 2rem;
+}
+
+.form-header {
+margin-bottom: 2rem;
+padding-bottom: 1rem;
+border-bottom: 2px solid #4a90e2;
+}
+
+.form-header h1 {
+color: #4a90e2;
+font-size: 2rem;
+margin-bottom: 0.5rem;
+}
+
+.room-info {
+color: #888;
+font-size: 0.9rem;
+}
+
+.form-group {
+margin-bottom: 1.5rem;
+}
+
+.form-group label {
+display: block;
+margin-bottom: 0.5rem;
+color: #e0e0e0;
+font-weight: 500;
+font-size: 0.95rem;
+}
+
+.form-control {
+width: 100%;
+padding: 0.75rem;
+border: 2px solid #3d3d3d;
+border-radius: 6px;
+background: #1a1a1a;
+color: #e0e0e0;
+font-size: 1rem;
+transition: border-color 0.3s ease, box-shadow 0.3s ease;
+}
+
+.form-control:focus {
+outline: none;
+border-color: #4a90e2;
+box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+textarea.form-control {
+resize: vertical;
+min-height: 120px;
+font-family: inherit;
+}
+
+/* Checkbox styling */
+.checkbox-group {
+display: flex;
+align-items: center;
+gap: 0.5rem;
+padding: 0.5rem 0;
+}
+
+.checkbox-group input[type="checkbox"] {
+width: 18px;
+height: 18px;
+accent-color: #4a90e2;
+}
+
+.checkbox-group label {
+margin-bottom: 0;
+cursor: pointer;
+}
+
+.admin-only {
+background: rgba(74, 144, 226, 0.1);
+padding: 1rem;
+border-radius: 6px;
+border-left: 3px solid #4a90e2;
+}
+
+.admin-only-header {
+color: #4a90e2;
+font-size: 0.9rem;
+font-weight: 600;
+margin-bottom: 0.75rem;
+}
+
+/* Error styling */
+.error-list {
+background: rgba(220, 53, 69, 0.1);
+border: 1px solid rgba(220, 53, 69, 0.3);
+border-radius: 6px;
+padding: 1rem;
+margin-bottom: 1.5rem;
+}
+
+.error-list ul {
+list-style: none;
+margin: 0;
+padding: 0;
+}
+
+.error-list li {
+color: #dc3545;
+font-size: 0.9rem;
+margin-bottom: 0.5rem;
+display: flex;
+align-items: center;
+gap: 0.5rem;
+}
+
+.error-list li:last-child {
+margin-bottom: 0;
+}
+
+.error-list li::before {
+content: "⚠";
+font-size: 1rem;
+}
+
+.field-error {
+color: #dc3545;
+font-size: 0.85rem;
+margin-top: 0.25rem;
+display: flex;
+align-items: center;
+gap: 0.25rem;
+}
+
+.field-error::before {
+content: "!";
+background: #dc3545;
+color: white;
+border-radius: 50%;
+width: 16px;
+height: 16px;
+display: flex;
+align-items: center;
+justify-content: center;
+font-size: 0.7rem;
+font-weight: bold;
+}
+
+.form-control.error {
+border-color: #dc3545;
+}
+
+/* Button styling */
+.form-actions {
+display: flex;
+gap: 1rem;
+margin-top: 2rem;
+padding-top: 1.5rem;
+border-top: 1px solid #3d3d3d;
+}
+
+.btn {
+padding: 0.75rem 2rem;
+border: none;
+border-radius: 6px;
+font-size: 1rem;
+font-weight: 500;
+cursor: pointer;
+text-decoration: none;
+display: inline-flex;
+align-items: center;
+gap: 0.5rem;
+transition: all 0.3s ease;
+}
+
+.btn-primary {
+background: #4a90e2;
+color: white;
+}
+
+.btn-primary:hover {
+background: #357abd;
+transform: translateY(-1px);
+box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.btn-secondary {
+background: #6c757d;
+color: white;
+}
+
+.btn-secondary:hover {
+background: #5a6268;
+transform: translateY(-1px);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+.form-container {
+padding: 1.5rem;
+}
+
+.form-actions {
+flex-direction: column;
+}
+
+.btn {
+justify-content: center;
+}
+}
+
+/* Loading state */
+.btn:disabled {
+opacity: 0.6;
+cursor: not-allowed;
+transform: none;
+}
+
+.btn:disabled:hover {
+transform: none;
+box-shadow: none;
+}
+</style>
+
+<div class="form-container">
+<div class="form-header">
+<h1>Create Notice</h1>
+<div class="room-info">Room: {{ room.name }}</div>
+</div>
+
+<!-- Error Messages -->
+{% if form.non_field_errors %}
+<div class="error-list">
+<ul>
+{% for error in form.non_field_errors %}
+<li>{{ error }}</li>
+{% endfor %}
+</ul>
+</div>
+{% endif %}
+
+<form method="post" novalidate>
+{% csrf_token %}
+
+<!-- Title Field -->
+<div class="form-group">
+<label for="{{ form.title.id_for_label }}">Notice Title</label>
+<input type="text" name="{{ form.title.name }}" class="form-control{% if form.title.errors %} error{% endif %}" 
+       value="{{ form.title.value|default:'' }}" id="{{ form.title.id_for_label }}" required>
+{% if form.title.errors %}
+<div class="field-error">
+{{ form.title.errors.0 }}
+</div>
+{% endif %}
+</div>
+
+<!-- Content Field -->
+<div class="form-group">
+<label for="{{ form.content.id_for_label }}">Content</label>
+<textarea name="{{ form.content.name }}" class="form-control{% if form.content.errors %} error{% endif %}" 
+          id="{{ form.content.id_for_label }}" rows="5" required>{{ form.content.value|default:'' }}</textarea>
+{% if form.content.errors %}
+<div class="field-error">
+{{ form.content.errors.0 }}
+</div>
+{% endif %}
+</div>
+
+<!-- Admin-only fields -->
+{% if request.user == room.admin %}
+<div class="admin-only">
+<div class="admin-only-header">Admin Options</div>
+
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" name="{{ form.is_pinned.name }}" id="{{ form.is_pinned.id_for_label }}" 
+       {% if form.is_pinned.value %}checked{% endif %}>
+<label for="{{ form.is_pinned.id_for_label }}">Pin this notice</label>
+</div>
+{% if form.is_pinned.errors %}
+<div class="field-error">
+{{ form.is_pinned.errors.0 }}
+</div>
+{% endif %}
+</div>
+
+<div class="form-group">
+<div class="checkbox-group">
+<input type="checkbox" name="{{ form.is_admin.name }}" id="{{ form.is_admin.id_for_label }}" 
+       {% if form.is_admin.value %}checked{% endif %}>
+<label for="{{ form.is_admin.id_for_label }}">Admin notice (only admins can see)</label>
+</div>
+{% if form.is_admin.errors %}
+<div class="field-error">
+{{ form.is_admin.errors.0 }}
+</div>
+{% endif %}
+</div>
+</div>
+{% endif %}
+
+<div class="form-actions">
+<button type="submit" class="btn btn-primary" id="submit-btn">
+<span>📝</span>
+Create Notice
+</button>
+<a href="{% url 'room' room_id=room.id %}" class="btn btn-secondary">
+<span>↩</span>
+Cancel
+</a>
+</div>
+</form>
+</div>
+
+<script>
+// Add loading state to form submission
+document.getElementById('submit-btn').addEventListener('click', function(e) {
+const btn = e.target;
+const form = btn.closest('form');
+
+// Add validation check
+// if (form.checkValidity()) {
+// btn.disabled = true;
+// btn.innerHTML = '<span>⏳</span> Creating...';
+// }
+// });
+
+// Auto-resize textarea
+const textarea = document.querySelector('textarea');
+if (textarea) {
+textarea.addEventListener('input', function() {
+this.style.height = 'auto';
+this.style.height = (this.scrollHeight) + 'px';
+});
+}
+
+// Enhanced form validation
+// const form = document.querySelector('form');
+// const inputs = form.querySelectorAll('.form-control');
+
+// inputs.forEach(input => {
+// input.addEventListener('blur', function() {
+// validateField(this);
+// });
+
+input.addEventListener('input', function() {
+// Remove error state when user starts typing
+this.classList.remove('error');
+const errorDiv = this.parentNode.querySelector('.field-error');
+if (errorDiv && !errorDiv.textContent.includes('This field is required')) {
+errorDiv.style.display = 'none';
+}
+});
+});
+
+function validateField(field) {
+if (field.required && !field.value.trim()) {
+field.classList.add('error');
+}
+}
+
+// Form submission validation
+form.addEventListener('submit', function(e) {
+let isValid = true;
+
+inputs.forEach(input => {
+if (input.required && !input.value.trim()) {
+input.classList.add('error');
+isValid = false;
+}
+});
+
+if (!isValid) {
+e.preventDefault();
+// Re-enable button if validation fails
+const submitBtn = document.getElementById('submit-btn');
+submitBtn.disabled = false;
+submitBtn.innerHTML = '<span>📝</span> Create Notice';
+}
+});
+</script>
+{% endblock %}
