@@ -1,0 +1,824 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ session.name }} - Stats{% endblock %}
+
+{% block head %}
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.9.1/chart.min.js"></script>
+<style>
+    :root {
+        --primary-color: #4a90e2;
+        --secondary-color: #2d2d2d;
+        --light-color: #e0e0e0;
+        --accent-color: #28a745;
+        --muted-color: #b0b0b0;
+    }
+
+    .stats-header {
+        background: linear-gradient(135deg, var(--primary-color), #357abd);
+        color: white;
+        padding: 2rem;
+        border-radius: 12px;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 20px rgba(74, 144, 226, 0.3);
+    }
+
+    .stats-title {
+        font-size: 2.75rem;
+        font-weight: 700;
+        margin-bottom: 0.25rem;
+    }
+
+    .stats-subtitle {
+        font-size: 1.1rem;
+        opacity: 0.9;
+    }
+
+    .status-badge {
+        display: inline-block;
+        padding: 0.3rem 1rem;
+        border-radius: 20px;
+        font-size: 0.9rem;
+        font-weight: bold;
+        margin-top: 0.5rem;
+    }
+
+    .status-active {
+        background: var(--accent-color);
+        color: white;
+    }
+
+    .status-completed {
+        background: #6c757d;
+        color: white;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+        gap: 1.5rem;
+        margin-bottom: 2rem;
+    }
+
+    .stat-card {
+        background: var(--secondary-color);
+        padding: 1.5rem;
+        border-radius: 10px;
+        border-left: 4px solid var(--primary-color);
+        transition: transform 0.3s ease, box-shadow 0.3s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-5px);
+        box-shadow: 0 8px 25px rgba(0, 0, 0, 0.4);
+    }
+
+    .stat-value {
+        font-size: 2.5rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .stat-label {
+        color: var(--muted-color);
+        font-size: 1rem;
+        text-transform: uppercase;
+        letter-spacing: 0.5px;
+    }
+
+    .chart-container, .summary-section {
+        background: var(--secondary-color);
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        margin-bottom: 2rem;
+    }
+
+    .timeline-container {
+        background: #2d2d2d;
+        padding: 2rem;
+        border-radius: 12px;
+        box-shadow: 0 4px 15px rgba(0, 0, 0, 0.3);
+        margin-bottom: 2rem;
+        width: 100%;
+    }
+
+    .timeline-canvas {
+        position: relative;
+        height: 500px;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .chart-title, .summary-title {
+        font-size: 1.4rem;
+        font-weight: bold;
+        color: var(--light-color);
+        text-align: center;
+        margin-bottom: 1.5rem;
+    }
+
+    .chart-canvas {
+        position: relative;
+        height: 300px;
+        width: 100%;
+    }
+
+    .timeline-canvas {
+        position: relative;
+        height: 600px;
+        width: 100%;
+        margin-top: 1rem;
+    }
+
+    .summary-stats {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1.5rem;
+    }
+
+    .summary-item {
+        text-align: center;
+        padding: 1rem;
+        background: #3d3d3d;
+        border-radius: 8px;
+    }
+
+    .summary-value {
+        font-size: 1.8rem;
+        font-weight: bold;
+        color: var(--primary-color);
+        margin-bottom: 0.5rem;
+    }
+
+    .summary-label, .date-item {
+        color: var(--muted-color);
+        font-size: 0.9rem;
+    }
+
+    .date-value {
+        color: var(--light-color);
+        font-weight: bold;
+    }
+
+    .session-dates {
+        display: flex;
+        gap: 2rem;
+        margin-top: 1rem;
+        flex-wrap: wrap;
+    }
+
+    .action-buttons {
+        display: flex;
+        gap: 1rem;
+        margin-bottom: 2rem;
+        flex-wrap: wrap;
+    }
+
+    .action-btn {
+        background: var(--primary-color);
+        color: white;
+        padding: 0.75rem 1.5rem;
+        border: none;
+        border-radius: 8px;
+        text-decoration: none;
+        font-weight: 600;
+        font-size: 0.95rem;
+        transition: all 0.3s ease;
+        display: inline-flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .action-btn:hover {
+        background: #357abd;
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(74, 144, 226, 0.4);
+        color: white;
+        text-decoration: none;
+    }
+
+    .action-btn.secondary {
+        background: var(--accent-color);
+    }
+
+    .action-btn.secondary:hover {
+        background: #1e7e34;
+    }
+
+    .loading {
+        text-align: center;
+        padding: 2rem;
+        color: #888;
+    }
+
+    @media (max-width: 768px) {
+        .stats-title {
+            font-size: 2rem;
+        }
+
+        .charts-grid, .summary-stats {
+            grid-template-columns: 1fr;
+        }
+
+        .chart-canvas, .timeline-canvas {
+            height: 250px;
+        }
+
+        .session-dates {
+            flex-direction: column;
+            gap: 0.5rem;
+        }
+
+        .action-buttons {
+            flex-direction: column;
+        }
+
+        .action-btn {
+            text-align: center;
+            justify-content: center;
+        }
+    }
+</style>
+{% endblock %}
+
+
+{% block content %}
+
+<div class="stats-header">
+    
+    {% if session.is_active %}
+    <a class="action-btn" href="{% url 'session' session_id=session.id %}" style="background-color: #84b4e8; margin-bottom: 1.5rem;"><- Back to session</a>
+        
+    {% endif %}
+        
+    <div class="stats-title">{{ session_stats.name }}</div>
+    <div class="stats-subtitle">{{ session_stats.description|default:"Session Statistics Dashboard" }}</div>
+    <span class="status-badge {% if session_stats.status == 'Active' %}status-active{% else %}status-completed{% endif %}">
+        {{ session_stats.status }}
+    </span>
+    
+    <div class="session-dates">
+        {% if session_stats.start_date %}
+        <div class="date-item">
+            <strong>Started:</strong> <span class="date-value">{{ session_stats.start_date|date:"M d, Y" }}</span>
+        </div>
+        {% endif %}
+        {% if session_stats.finish_date %}
+        <div class="date-item">
+            <strong>Finished:</strong> <span class="date-value">{{ session_stats.finish_date|date:"M d, Y" }}</span>
+        </div>
+        {% endif %}
+        
+    </div>
+    <a class="action-btn" href="{% url 'user-session-stats' session_id=session.id %}" style="background-color: #6fd421; margin-top: 1.5rem;">📊 Personalized Stats -></a>
+</div>
+
+<!-- Basic Stats Grid -->
+<div class="stats-grid">
+    <div class="stat-card">
+        <div class="stat-value">{{ session_stats.total_members }}</div>
+        <div class="stat-label">Total Members</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{ session_stats.total_hours }}h</div>
+        <div class="stat-label">Total Hours</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{ session_stats.active_tasks }}</div>
+        <div class="stat-label">Active Tasks</div>
+    </div>
+    
+    <div class="stat-card">
+        <div class="stat-value">{{ session_stats.total_tasks }}</div>
+        <div class="stat-label">Total Tasks</div>
+    </div>
+</div>
+
+<!-- Charts Section -->
+<div class="charts-grid">
+    <!-- Daily Hours Chart (Cumulative) -->
+    <div class="chart-container">
+        <div class="chart-title">Daily Hours Progress (Cumulative)</div>
+        <div class="chart-canvas">
+            <canvas id="dailyHoursChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Daily Hours Chart (Non-Cumulative) -->
+    <div class="chart-container">
+        <div class="chart-title">Daily Hours Progress (Per Day)</div>
+        <div class="chart-canvas">
+            <canvas id="dailyIndependentChart"></canvas>
+        </div>
+    </div>
+    
+    <!-- Top Tasks Chart -->
+    <div class="chart-container">
+        <div class="chart-title">Top Tasks by Hours</div>
+        <div class="chart-canvas">
+            <canvas id="topTasksChart"></canvas>
+        </div>
+    </div>
+    <!-- Performers Chart -->
+    <div class="chart-container">
+        <div class="chart-title">Top Performers (top 8)</div>
+        <div class="chart-canvas">
+            <canvas id="performersChart"></canvas>
+        </div>
+    </div>
+</div>
+
+<!-- Full Width Timeline Chart (Cumulative) -->
+<div class="timeline-container">
+    <div class="chart-title">Member Progress Timeline (Cumulative)</div>
+    <div class="timeline-canvas">
+        <canvas id="timelineChart"></canvas>
+    </div>
+</div>
+
+<!-- Full Width Individual Timeline Chart (Non-Cumulative) -->
+<div class="timeline-container">
+    <div class="chart-title">Member Progress Timeline (Per Day)</div>
+    <div class="timeline-canvas">
+        <canvas id="individualTimelineChart"></canvas>
+    </div>
+</div>
+
+<!-- Summary Statistics -->
+<div class="summary-section">
+    <div class="summary-title">Summary Statistics</div>
+    <div class="summary-stats">
+        <div class="summary-item">
+            <div class="summary-value">{{ summary_stats.avg_daily }}h</div>
+            <div class="summary-label">Avg Daily Hours Per User</div>
+        </div>
+        
+        <div class="summary-item">
+            <div class="summary-value">{{ summary_stats.best_day }}</div>
+            <div class="summary-label">Most Productive Day</div>
+        </div>
+        
+        <div class="summary-item">
+            <div class="summary-value">{{ summary_stats.completion_rate }}%</div>
+            <div class="summary-label">Task Completion Rate</div>
+        </div>
+        
+        <div class="summary-item">
+            <div class="summary-value">{{ summary_stats.longest_streak }}</div>
+            <div class="summary-label">Longest Streak (days)</div>
+        </div>
+        
+        <div class="summary-item">
+            <div class="summary-value">{{ summary_stats.completed_tasks }}/{{ summary_stats.total_tasks }}</div>
+            <div class="summary-label">Tasks Progress</div>
+        </div>
+    </div>
+</div>
+
+<script>
+// Chart.js default configuration for dark theme
+Chart.defaults.color = '#e0e0e0';
+Chart.defaults.backgroundColor = '#4a90e2';
+Chart.defaults.borderColor = '#3d3d3d';
+
+// Parse JSON data from Django
+const dailyHoursData = {{ daily_hours_json|safe }};
+const dailyIndependentData = {{ daily_independent_json|safe }};
+const topTasksData = {{ top_tasks_json|safe }};
+const performersData = {{ performers_json|safe }};
+const timelineData = {{ timeline_json|safe }};
+const individualTimelineData = {{ individual_timeline_json|safe }};
+
+// Daily Hours Chart (Cumulative)
+const dailyHoursCtx = document.getElementById('dailyHoursChart').getContext('2d');
+new Chart(dailyHoursCtx, {
+    type: 'line',
+    data: {
+        labels: dailyHoursData.labels,
+        datasets: [{
+            label: 'Cumulative Hours',
+            data: dailyHoursData.data,
+            borderColor: '#4a90e2',
+            backgroundColor: 'rgba(74, 144, 226, 0.1)',
+            fill: true,
+            tension: 0.4,
+            pointBackgroundColor: '#4a90e2',
+            pointBorderColor: '#ffffff',
+            pointBorderWidth: 2,
+            pointRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0'
+                }
+            },
+            x: {
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0'
+                }
+            }
+        }
+    }
+});
+
+// Daily Hours Chart (Non-Cumulative)
+const dailyIndependentCtx = document.getElementById('dailyIndependentChart').getContext('2d');
+new Chart(dailyIndependentCtx, {
+    type: 'bar',
+    data: {
+        labels: dailyIndependentData.labels,
+        datasets: [{
+            label: 'Daily Hours',
+            data: dailyIndependentData.data,
+            backgroundColor: 'rgba(40, 167, 69, 0.8)',
+            borderColor: '#28a745',
+            borderWidth: 1,
+            borderRadius: 4
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0'
+                }
+            },
+            x: {
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0'
+                }
+            }
+        }
+    }
+});
+
+// Top Tasks Chart
+const topTasksCtx = document.getElementById('topTasksChart').getContext('2d');
+new Chart(topTasksCtx, {
+    type: 'bar',
+    data: {
+        labels: topTasksData.labels,
+        datasets: [{
+            label: 'Hours',
+            data: topTasksData.data,
+            backgroundColor: [
+                '#4a90e2', '#28a745', '#ffc107', '#dc3545', '#6f42c1',
+                '#20c997', '#fd7e14', '#e83e8c', '#6c757d', '#17a2b8'
+            ],
+            borderColor: '#3d3d3d',
+            borderWidth: 1
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                display: false
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0'
+                }
+            },
+            x: {
+                grid: {
+                    color: '#3d3d3d'
+                },
+                ticks: {
+                    color: '#e0e0e0',
+                    maxRotation: 45
+                }
+            }
+        }
+    }
+});
+
+// Performers Pie Chart
+const performersCtx = document.getElementById('performersChart').getContext('2d');
+new Chart(performersCtx, {
+    type: 'doughnut',
+    data: {
+        labels: performersData.labels,
+        datasets: [{
+            data: performersData.data,
+            backgroundColor: performersData.colors,
+            borderColor: '#2d2d2d',
+            borderWidth: 2
+        }]
+    },
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'bottom',
+                labels: {
+                    color: '#e0e0e0',
+                    padding: 20,
+                    usePointStyle: true
+                }
+            }
+        }
+    }
+});
+
+// Timeline Chart (Cumulative)
+const timelineCtx = document.getElementById('timelineChart').getContext('2d');
+
+// Generate colors for each user (Timeline)
+const colors = ['#4a90e2', '#28a745', '#ffc107', '#dc3545', '#6f42c1', '#20c997', '#fd7e14', '#e83e8c'];
+timelineData.datasets.forEach((dataset, index) => {
+    dataset.borderColor = colors[index % colors.length];
+    dataset.backgroundColor = colors[index % colors.length] + '20';
+    dataset.fill = false;
+    dataset.tension = 0.4;
+    dataset.pointBackgroundColor = colors[index % colors.length];
+    dataset.pointBorderColor = '#ffffff';
+    dataset.pointBorderWidth = 2;
+    dataset.pointRadius = 3;
+});
+
+new Chart(timelineCtx, {
+    type: 'line',
+    data: timelineData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#e0e0e0',
+                    padding: 20,
+                    usePointStyle: true,
+                    font: {
+                        size: 12
+                    },
+                    boxWidth: 15,
+                    boxHeight: 15
+                }
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(45, 45, 45, 0.9)',
+                titleColor: '#e0e0e0',
+                bodyColor: '#e0e0e0',
+                borderColor: '#4a90e2',
+                borderWidth: 1,
+                cornerRadius: 8,
+                displayColors: true,
+                callbacks: {
+                    title: function(context) {
+                        return 'Date: ' + context[0].label;
+                    },
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + 'h';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#3d3d3d',
+                    lineWidth: 1
+                },
+                ticks: {
+                    color: '#e0e0e0',
+                    font: {
+                        size: 12
+                    },
+                    callback: function(value) {
+                        return value + 'h';
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Cumulative Hours',
+                    color: '#e0e0e0',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    color: '#3d3d3d',
+                    lineWidth: 1
+                },
+                ticks: {
+                    color: '#e0e0e0',
+                    font: {
+                        size: 12
+                    },
+                    maxTicksLimit: 15,
+                    autoSkip: true
+                },
+                title: {
+                    display: true,
+                    text: 'Date',
+                    color: '#e0e0e0',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            }
+        },
+        elements: {
+            point: {
+                radius: 3,
+                hoverRadius: 6,
+                borderWidth: 2,
+                hoverBorderWidth: 3
+            },
+            line: {
+                borderWidth: 3,
+                tension: 0.4
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        animation: {
+            duration: 1000,
+            easing: 'easeInOutQuart'
+        }
+    }
+});
+
+// Individual Timeline Chart (Non-Cumulative)
+const individualTimelineCtx = document.getElementById('individualTimelineChart').getContext('2d');
+
+// Generate colors for each user (Individual Timeline)
+const individualColors = ['#ff6b6b', '#4ecdc4', '#45b7d1', '#96ceb4', '#feca57', '#ff9ff3', '#54a0ff', '#5f27cd'];
+individualTimelineData.datasets.forEach((dataset, index) => {
+    dataset.borderColor = individualColors[index % individualColors.length];
+    dataset.backgroundColor = individualColors[index % individualColors.length] + '20';
+    dataset.fill = false;
+    dataset.tension = 0.4;
+    dataset.pointBackgroundColor = individualColors[index % individualColors.length];
+    dataset.pointBorderColor = '#ffffff';
+    dataset.pointBorderWidth = 2;
+    dataset.pointRadius = 3;
+});
+
+new Chart(individualTimelineCtx, {
+    type: 'line',
+    data: individualTimelineData,
+    options: {
+        responsive: true,
+        maintainAspectRatio: false,
+        plugins: {
+            legend: {
+                position: 'top',
+                labels: {
+                    color: '#e0e0e0',
+                    padding: 20,
+                    usePointStyle: true,
+                    font: {
+                        size: 12
+                    },
+                    boxWidth: 15,
+                    boxHeight: 15
+                }
+            },
+            tooltip: {
+                mode: 'index',
+                intersect: false,
+                backgroundColor: 'rgba(45, 45, 45, 0.9)',
+                titleColor: '#e0e0e0',
+                bodyColor: '#e0e0e0',
+                borderColor: '#ff6b6b',
+                borderWidth: 1,
+                cornerRadius: 8,
+                displayColors: true,
+                callbacks: {
+                    title: function(context) {
+                        return 'Date: ' + context[0].label;
+                    },
+                    label: function(context) {
+                        return context.dataset.label + ': ' + context.parsed.y.toFixed(1) + 'h';
+                    }
+                }
+            }
+        },
+        scales: {
+            y: {
+                beginAtZero: true,
+                grid: {
+                    color: '#3d3d3d',
+                    lineWidth: 1
+                },
+                ticks: {
+                    color: '#e0e0e0',
+                    font: {
+                        size: 12
+                    },
+                    callback: function(value) {
+                        return value + 'h';
+                    }
+                },
+                title: {
+                    display: true,
+                    text: 'Daily Hours',
+                    color: '#e0e0e0',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            },
+            x: {
+                grid: {
+                    color: '#3d3d3d',
+                    lineWidth: 1
+                },
+                ticks: {
+                    color: '#e0e0e0',
+                    font: {
+                        size: 12
+                    },
+                    maxTicksLimit: 15,
+                    autoSkip: true
+                },
+                title: {
+                    display: true,
+                    text: 'Date',
+                    color: '#e0e0e0',
+                    font: {
+                        size: 14,
+                        weight: 'bold'
+                    }
+                }
+            }
+        },
+        elements: {
+            point: {
+                radius: 3,
+                hoverRadius: 6,
+                borderWidth: 2,
+                hoverBorderWidth: 3
+            },
+            line: {
+                borderWidth: 3,
+                tension: 0.4
+            }
+        },
+        interaction: {
+            intersect: false,
+            mode: 'index'
+        },
+        animation: {
+            duration: 1000,
+            easing: 'easeInOutQuart'
+        }
+    }
+});
+</script>
+{% endblock %}

@@ -1,0 +1,89 @@
+{% extends 'base.html' %}
+
+{% block title %}
+    Account Settings
+{% endblock title %}
+
+{% block content %}
+<style>
+    .settings-container {
+        max-width: 600px;
+        margin: 40px auto;
+        padding: 30px;
+        background-color: #3c3636;
+        border-radius: 12px;
+        box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
+        font-family: sans-serif;
+    }
+
+    .settings-container h2 {
+        font-size: 24px;
+        margin-bottom: 20px;
+        color: #333;
+        text-align: center;
+    }
+
+    .settings-links {
+        display: flex;
+        flex-direction: column;
+        gap: 15px;
+    }
+
+    .settings-links a {
+        display: inline-block;
+        padding: 12px 20px;
+        background-color: #4a90e2;
+        color: white;
+        text-decoration: none;
+        border-radius: 8px;
+        transition: background-color 0.3s ease;
+        text-align: center;
+    }
+
+    .settings-links a:hover {
+        background-color: #357ab7;
+    }
+
+    .settings-links a.logout {
+        background-color: #e74c3c;
+    }
+
+    .settings-links a.logout:hover {
+        background-color: #c0392b;
+    }
+
+    .settings-links a.create {
+        background-color: #f39c12;
+    }
+
+    .settings-links a.create:hover {
+        background-color: #d68910;
+    }
+
+    .not-logged-in {
+        text-align: center;
+        color: #888;
+        font-size: 16px;
+    }
+</style>
+
+<div class="settings-container">
+    <h2 style="color: wheat;">Account Settings</h2>
+
+    {% if user.is_authenticated %}
+        <div class="settings-links">
+            {% if user.profile %}
+                <a href="{% url 'editprofile' %}">✏️ Edit Profile</a>
+                <a href="{% url 'profile' request.user.username %}">👤 View Profile</a>
+            {% else %}
+                <a href="{% url 'createprofile' %}" class="create">➕ Create Profile</a>
+            {% endif %}
+
+            <a href="{% url 'changepass' %}">🔒 Change Password</a>
+            <a href="{% url 'logout' %}" class="logout">🚪 Logout</a>
+        </div>
+    {% else %}
+        <p class="not-logged-in">You are not logged in.</p>
+    {% endif %}
+</div>
+{% endblock content %}

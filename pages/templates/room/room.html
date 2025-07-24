@@ -1,0 +1,741 @@
+{% extends 'base.html' %}
+
+
+{% block title %}{{ room.name }} - Room Details{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+<div class="room-header">
+    <div class="room-info">
+        <h1>{{ room.name }}</h1>
+        {% if room.bio %}
+            <p class="room-bio">{{ room.bio }}</p>
+        {% endif %}
+        <div class="room-meta">
+            <span class="meta-item members-trigger" onclick="toggleMembersPopup()">
+                <span class="meta-icon">👥</span>
+                {{ room.members.count }} members
+            </span>
+            <span class="meta-item">
+                <span class="meta-icon">📅</span>
+                Created {{ room.created_on|date:"M d, Y" }}
+            </span>
+            <span class="meta-item">
+                <span class="meta-icon">⚡</span>
+                Admin: {{ room.admin }}
+            </span>
+        </div>
+    </div>
+    <div class="room-actions">
+        <a href="{% url 'room-notices' room_id=room.id %}" class="btn btn-secondary">Notices</a>
+        <a href="{% url 'room-settings' room_id=room.id %}" class="btn btn-secondary">⚙️</a>
+        <button onclick="toggleMembersPopup(); return false;" class="btn btn-secondary">Members</button>
+<br>
+        {% if user == room.admin %}
+            <a href="{% url 'createsession' room_id=room.id %}" class="btn btn-primary" style="margin-top:5%; margin-left: 3%;">Create Session</a>
+            {% endif %}
+    </div>
+</div>
+
+<div class="room-content">
+    <!-- Active Sessions -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <span class="title-icon">🔴</span>
+            Active Sessions
+        </h2>
+        <div class="sessions-list">
+            {% for session in active_sessions %}
+                <a href="{% url 'session' session_id=session.id %}" class="session-item active-session">
+                    <div class="session-info">
+                        <h3>{{ session.name }}</h3>
+                        <div class="session-status">
+                            <span class="status-indicator active"></span>
+                            Active
+                        </div>
+                    </div>
+                    <div class="session-arrow">→</div>
+                </a>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No active sessions</p>
+                    <small>Create a session to start working together</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Past Sessions -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <span class="title-icon">📚</span>
+            Past Sessions
+        </h2>
+        <div class="sessions-list">
+            {% for session in old_sessions %}
+                <a href="{% url 'session' session_id=session.id %}" class="session-item past-session">
+                    <div class="session-info">
+                        <h3>{{ session.name }}</h3>
+                        <div class="session-status">
+                            <span class="status-indicator completed"></span>
+                            Completed
+                        </div>
+                    </div>
+                    <div class="session-arrow">→</div>
+                </a>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No past sessions</p>
+                    <small>Previous sessions will appear here</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+    <!-- Leaderboard -->
+    <div class="section-card">
+        <h2 class="section-title">
+            <span class="title-icon">🏆</span>
+            Room Leaderboard
+        </h2>
+        <div class="leaderboard">
+            {% for ranking in room.rankings.all %}
+                <div class="leaderboard-item {% if forloop.first %}top-performer{% elif forloop.counter == 2 %}second-place{% elif forloop.counter == 3 %}third-place{% endif %}">
+                    <div class="rank">
+                        {% if forloop.first %}
+                            <span class="medal gold">🥇</span>
+                        {% elif forloop.counter == 2 %}
+                            <span class="medal silver">🥈</span>
+                        {% elif forloop.counter == 3 %}
+                            <span class="medal bronze">🥉</span>
+                        {% else %}
+                            <span class="rank-number">#{{ ranking.rank }}</span>
+                        {% endif %}
+                    </div>
+                    <div class="user-info">
+                        <span class="username">{{ ranking.user }}</span>
+    
+                    </div>
+                    <div class="hours">
+                        <span class="hours-number">{{ ranking.total_hours }}</span>
+                        <span class="hours-label">hours</span>
+                    </div>
+                </div>
+            {% empty %}
+                <div class="empty-state">
+                    <p>No rankings yet</p>
+                    <small>Start a session to get on the leaderboard!</small>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+</div>
+
+<!-- Members Popup -->
+<div id="membersPopup" class="popup-overlay" onclick="closeMembersPopup()">
+    <div class="popup-content" onclick="event.stopPropagation()">
+        <div class="popup-header">
+            <h3>Room Members</h3>
+            <button class="close-btn" onclick="closeMembersPopup()">×</button>
+        </div>
+        <div class="popup-body">
+            <div class="admin-section">
+                <h4>Admin</h4>
+                <a href="{% url 'profile' room.admin.username%}" style="text-decoration: none;">
+
+                <div class="member-item admin-member">
+                    <div class="member-avatar">👑</div>
+                    <div class="member-info">
+                        <span class="member-name">{{ room.admin }}</span>
+                        <span class="member-role">Room Admin</span>
+                    </div>
+                </div>
+                 </a>
+
+            </div>
+            <div class="members-section">
+                <h4>Members ({{ room.members.count }})</h4>
+                <div class="members-list">
+                    {% for member in room.members.all %}
+                        {% if member != room.admin %}
+
+                            <div class="member-item">
+                                <div class="member-avatar">👤</div>
+                                <div class="member-info">
+                                    <a style="text-decoration: none;" href="{% url 'profile' member.username%}">
+
+                                    <span class="member-name">{{ member }}</span>
+                                    </a>
+                                    <span class="member-role">Member</span>
+                                </div>
+                                
+                                    View
+                                
+                                {% if user == room.admin %}
+                                <button class="kick-btn" onclick="kickUser('{{ member.id }}', '{{ member }}')">
+                                    Kick
+                                </button>
+                                {% endif %}
+                            </div>
+                            {% endif %}
+                        
+                    {% empty %}
+                        <div class="empty-state">
+                            <p>No members yet</p>
+                        </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<style>
+/* Room Header */
+.room-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, #2d2d2d 0%, #1a1a1a 100%);
+    border-radius: 12px;
+    border: 1px solid #3d3d3d;
+}
+
+.room-info h1 {
+    color: #e0e0e0;
+    font-size: 2.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.room-bio {
+    color: #b0b0b0;
+    font-size: 1.1rem;
+    margin-bottom: 1rem;
+    line-height: 1.5;
+}
+
+.room-meta {
+    display: flex;
+    gap: 1.5rem;
+    flex-wrap: wrap;
+}
+
+.meta-item {
+    color: #888;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 0.3rem;
+}
+
+.members-trigger {
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.members-trigger:hover {
+    color: #4a90e2;
+}
+
+.meta-icon {
+    font-size: 1rem;
+}
+
+.room-actions {
+    flex-shrink: 0;
+}
+
+.btn {
+    padding: 0.8rem 1.5rem;
+    border-radius: 8px;
+    text-decoration: none;
+    font-weight: 600;
+    transition: all 0.3s ease;
+    display: inline-block;
+}
+
+.btn-primary {
+    background: #4a90e2;
+    color: white;
+    border: none;
+}
+
+.btn-primary:hover {
+    background: #357abd;
+    transform: translateY(-2px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: #4a90e2;
+    border: 2px solid #4a90e2;
+    margin-left: 0.5rem;
+}
+
+.btn-secondary:hover {
+    background: #4a90e2;
+    color: white;
+    transform: translateY(-2px);
+}
+
+/* Room Content */
+.room-content {
+    display: grid;
+    gap: 2rem;
+}
+
+.section-card {
+    background: #2d2d2d;
+    border-radius: 12px;
+    border: 1px solid #3d3d3d;
+    padding: 2rem;
+}
+
+.section-title {
+    color: #e0e0e0;
+    font-size: 1.5rem;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.title-icon {
+    font-size: 1.2rem;
+}
+
+/* Leaderboard */
+.leaderboard {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.leaderboard-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.5rem;
+    background: #1a1a1a;
+    border-radius: 10px;
+    border: 1px solid #3d3d3d;
+    transition: all 0.3s ease;
+    position: relative;
+}
+
+.leaderboard-item:hover {
+    background: #333;
+    transform: translateY(-2px);
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.top-performer {
+    background: linear-gradient(135deg, #ffd700 0%, #ffed4e 100%);
+    color: #1a1a1a;
+    box-shadow: 0 8px 25px rgba(255, 215, 0, 0.3);
+    border: 2px solid #ffd700;
+}
+
+.second-place {
+    background: linear-gradient(135deg, #c0c0c0 0%, #e5e5e5 100%);
+    color: #1a1a1a;
+    box-shadow: 0 6px 20px rgba(192, 192, 192, 0.3);
+    border: 2px solid #c0c0c0;
+}
+
+.third-place {
+    background: linear-gradient(135deg, #cd7f32 0%, #daa520 100%);
+    color: #1a1a1a;
+    box-shadow: 0 6px 20px rgba(205, 127, 50, 0.3);
+    border: 2px solid #cd7f32;
+}
+
+.rank {
+    font-weight: bold;
+    font-size: 1.5rem;
+    min-width: 60px;
+    text-align: center;
+}
+
+.medal {
+    font-size: 2rem;
+}
+
+.rank-number {
+    font-size: 1.2rem;
+    color: #4a90e2;
+}
+
+.user-info {
+    flex: 1;
+}
+
+.username {
+    font-weight: 700;
+    color: #e0e0e0;
+    font-size: 1.1rem;
+    display: block;
+    margin-bottom: 0.5rem;
+}
+
+.top-performer .username,
+.second-place .username,
+.third-place .username {
+    color: #1a1a1a;
+}
+
+
+.top-performer .progress-fill,
+.second-place .progress-fill,
+.third-place .progress-fill {
+    background: rgba(26, 26, 26, 0.3);
+}
+
+.hours {
+    text-align: center;
+    font-weight: bold;
+    color: #4a90e2;
+    min-width: 80px;
+}
+
+.hours-number {
+    font-size: 1.5rem;
+    display: block;
+}
+
+.hours-label {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.top-performer .hours,
+.second-place .hours,
+.third-place .hours {
+    color: #1a1a1a;
+}
+
+.top-performer .hours-label,
+.second-place .hours-label,
+.third-place .hours-label {
+    color: rgba(26, 26, 26, 0.7);
+}
+
+/* Sessions */
+.sessions-list {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.session-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 1rem;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #3d3d3d;
+    text-decoration: none;
+    color: inherit;
+    transition: all 0.3s ease;
+}
+
+.session-item:hover {
+    background: #333;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+}
+
+.session-info h3 {
+    color: #e0e0e0;
+    margin-bottom: 0.3rem;
+    font-size: 1.1rem;
+}
+
+.session-status {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+}
+
+.status-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+}
+
+.status-indicator.active {
+    background: #4ade80;
+    box-shadow: 0 0 8px rgba(74, 222, 128, 0.5);
+}
+
+.status-indicator.completed {
+    background: #888;
+}
+
+.active-session .session-status {
+    color: #4ade80;
+}
+
+.past-session .session-status {
+    color: #888;
+}
+
+.session-arrow {
+    color: #4a90e2;
+    font-size: 1.2rem;
+    font-weight: bold;
+}
+
+/* Empty State */
+.empty-state {
+    text-align: center;
+    padding: 2rem;
+    color: #888;
+}
+
+.empty-state p {
+    margin-bottom: 0.5rem;
+}
+
+.empty-state small {
+    color: #666;
+}
+
+/* Members Popup */
+.popup-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.8);
+    display: none;
+    justify-content: center;
+    align-items: center;
+    z-index: 1000;
+}
+
+.popup-content {
+    background: #2d2d2d;
+    border-radius: 12px;
+    border: 1px solid #3d3d3d;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    overflow-y: auto;
+    box-shadow: 0 20px 40px rgba(0, 0, 0, 0.5);
+}
+
+.popup-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 1.5rem;
+    border-bottom: 1px solid #3d3d3d;
+}
+
+.popup-header h3 {
+    color: #e0e0e0;
+    margin: 0;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    color: #888;
+    font-size: 1.5rem;
+    cursor: pointer;
+    transition: color 0.3s ease;
+}
+
+.close-btn:hover {
+    color: #e0e0e0;
+}
+
+.popup-body {
+    padding: 1.5rem;
+}
+
+.admin-section,
+.members-section {
+    margin-bottom: 1.5rem;
+}
+
+.admin-section h4,
+.members-section h4 {
+    color: #e0e0e0;
+    margin-bottom: 1rem;
+    font-size: 1.1rem;
+}
+
+.member-item {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1rem;
+    background: #1a1a1a;
+    border-radius: 8px;
+    border: 1px solid #3d3d3d;
+    margin-bottom: 0.5rem;
+    transition: all 0.3s ease;
+}
+
+.member-item:hover {
+    background: #333;
+    transform: translateY(-1px);
+}
+
+.admin-member {
+    background: linear-gradient(135deg, #0d1b2a 0%, #413d55 100%);
+    color: white;
+    box-shadow: 0 4px 15px rgba(74, 144, 226, 0.3);
+}
+
+.member-avatar {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #333;
+    border-radius: 50%;
+}
+
+.admin-member .member-avatar {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.member-info {
+    flex: 1;
+}
+
+.member-name {
+    font-weight: 600;
+    color: #e0e0e0;
+    display: block;
+    margin-bottom: 0.2rem;
+}
+
+.admin-member .member-name {
+    color: white;
+}
+
+.member-role {
+    font-size: 0.8rem;
+    color: #888;
+}
+
+.admin-member .member-role {
+    color: rgba(255, 255, 255, 0.8);
+}
+
+/* Kick Button */
+.kick-btn {
+    background: #dc3545;
+    color: white;
+    border: none;
+    padding: 0.5rem 1rem;
+    border-radius: 6px;
+    font-size: 0.8rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-left: auto;
+}
+
+.kick-btn:hover {
+    background: #c82333;
+    transform: translateY(-1px);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.3);
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .room-header {
+        flex-direction: column;
+        gap: 1rem;
+    }
+    
+    .room-info h1 {
+        font-size: 2rem;
+    }
+    
+    .room-meta {
+        flex-direction: column;
+        gap: 0.5rem;
+    }
+    
+    .leaderboard-item {
+        gap: 0.5rem;
+    }
+    
+    .section-card {
+        padding: 1.5rem;
+    }
+    
+    .member-item {
+        flex-wrap: wrap;
+    }
+    
+    .kick-btn {
+        margin-left: 0;
+        margin-top: 0.5rem;
+        width: 100%;
+    }
+}
+</style>
+
+<script>
+    function toggleMembersPopup() {
+    const popup = document.getElementById('membersPopup');
+    popup.style.display = popup.style.display === 'flex' ? 'none' : 'flex';
+}
+
+function closeMembersPopup() {
+    document.getElementById('membersPopup').style.display = 'none';
+}
+
+// Close popup when pressing Escape
+document.addEventListener('keydown', function(e) {
+    if (e.key === 'Escape') {
+        closeMembersPopup();
+    }
+});
+
+function kickUser(userId, userName) {
+    if (confirm(`Are you sure you want to kick ${userName} from the room?`)) {
+        // Add your kick user logic here
+        // You can make an AJAX call to your Django view
+        fetch(`/kick-user/`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+                'X-CSRFToken': document.querySelector('[name=csrfmiddlewaretoken]').value,
+            },
+            body: JSON.stringify({
+                'room_id': '{{ room.id }}',
+                'user_id': userId
+            })
+        })
+        .then(response => response.json())
+        .then(data => {
+            if (data.success) {
+                location.reload(); // Reload to update the member list
+            } else {
+                alert('Error kicking user: ' + data.error);
+            }
+        })
+        .catch(error => {
+            console.error('Error:', error);
+            alert('Error kicking user');
+        });
+    }
+}
+</script>
+{% endblock %}

@@ -1,0 +1,260 @@
+{% extends 'base.html' %}
+
+{% block title %}Dashboard{% endblock %}
+
+{% block content %}
+<style>
+    .dashboard-card {
+        background: #2d2d2d;
+        border-radius: 8px;
+        padding: 1.5rem;
+        margin-bottom: 1.5rem;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.3);
+        border: 1px solid #3d3d3d;
+    }
+
+    .card-header {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        margin-bottom: 1rem;
+        padding-bottom: 0.75rem;
+        border-bottom: 1px solid #3d3d3d;
+    }
+
+    .card-title {
+        font-size: 1.25rem;
+        font-weight: 600;
+        color: #4a90e2;
+    }
+
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+        gap: 1rem;
+        margin-bottom: 1.5rem;
+    }
+
+    .stat-card {
+        background: #3d3d3d;
+        border-radius: 6px;
+        padding: 1rem;
+        text-align: center;
+        transition: transform 0.2s ease;
+    }
+
+    .stat-card:hover {
+        transform: translateY(-2px);
+        background: #454545;
+    }
+
+    .stat-value {
+        font-size: 2rem;
+        font-weight: bold;
+        color: #4a90e2;
+        margin: 0.5rem 0;
+    }
+
+    .stat-label {
+        font-size: 0.9rem;
+        color: #aaa;
+    }
+
+    .session-list {
+        list-style: none;
+    }
+
+    .session-item {
+        background: #3d3d3d;
+        border-radius: 6px;
+        padding: 1rem;
+        margin-bottom: 0.75rem;
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        transition: background 0.2s ease;
+        cursor: pointer;
+    }
+
+    .session-item:hover {
+        background: #454545;
+    }
+
+    .session-info {
+        flex: 1;
+    }
+
+    .session-name {
+        font-weight: 600;
+        font-size: 1.1rem;
+        margin-bottom: 0.25rem;
+    }
+
+    .session-meta {
+        font-size: 0.85rem;
+        color: #aaa;
+    }
+
+    .session-status {
+        padding: 0.25rem 0.75rem;
+        border-radius: 20px;
+        font-size: 0.8rem;
+        font-weight: 500;
+        margin-right: 1rem;
+    }
+
+    .status-active {
+        background: rgba(76, 175, 80, 0.2);
+        color: #4caf50;
+    }
+
+    .status-past {
+        background: rgba(244, 67, 54, 0.2);
+        color: #f44336;
+    }
+
+    .empty-state {
+        text-align: center;
+        padding: 2rem;
+        color: #888;
+    }
+
+    .empty-state i {
+        font-size: 3rem;
+        margin-bottom: 1rem;
+        color: #4a90e2;
+    }
+
+    .action-button {
+        background: #4a90e2;
+        color: white;
+        border: none;
+        padding: 0.5rem 1rem;
+        border-radius: 4px;
+        cursor: pointer;
+        font-weight: 500;
+        transition: background 0.2s ease;
+        text-decoration: none;
+        display: inline-block;
+    }
+
+    .action-button:hover {
+        background: #357abd;
+    }
+
+    @media (max-width: 768px) {
+        .stats-grid {
+            grid-template-columns: 1fr;
+        }
+        
+        .session-item {
+            flex-direction: column;
+            align-items: flex-start;
+            gap: 0.75rem;
+        }
+    }
+</style>
+
+<div class="dashboard-card">
+    <div class="card-header">
+        <h2 class="card-title">Welcome, {{ user.username }}!</h2>
+    </div>
+    
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-label">Total Sessions</div>
+            <div class="stat-value">{{ sessions|length }}</div>
+            <div class="stat-label">Participated</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-label">Active Sessions</div>
+            <div class="stat-value">{{ active_sessions|length }}</div>
+            <div class="stat-label">Currently Running</div>
+        </div>
+        
+        <div class="stat-card">
+            <div class="stat-label">Completed</div>
+            <div class="stat-value">{{ past_sessions|length }}</div>
+            <div class="stat-label">Sessions</div>
+        </div>
+    </div>
+</div>
+
+<div class="dashboard-card">
+    <div class="card-header">
+        <h2 class="card-title">Active Sessions</h2>
+        <span class="stat-label">{{ active_sessions|length }} sessions</span>
+    </div>
+    
+    {% if active_sessions %}
+        <ul class="session-list">
+            {% for session in active_sessions %}
+                <li class="session-item" onclick="window.location.href='{% url 'user-session-stats' session_id=session.id %}'">
+                    <div class="session-info">
+                        <div class="session-name">{{ session.name }}</div>
+                        <div class="session-meta">
+                            Room: {{ session.room.name }} • 
+                            Started: {{ session.start_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    <div class="session-status status-active">Active</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-state">
+            <div>📭</div>
+            <h3>No Active Sessions</h3>
+            <p>You're not currently participating in any active sessions.</p>
+        </div>
+    {% endif %}
+</div>
+
+<div class="dashboard-card">
+    <div class="card-header">
+        <h2 class="card-title">Recent Sessions</h2>
+        <span class="stat-label">{{ past_sessions|length }} sessions</span>
+    </div>
+    
+    {% if past_sessions %}
+        <ul class="session-list">
+            {% for session in past_sessions|slice:":5" %}
+                <li class="session-item" onclick="window.location.href='{% url 'user-session-stats' session_id=session.id %}'">
+                    <div class="session-info">
+                        <div class="session-name">{{ session.name }}</div>
+                        <div class="session-meta">
+                            Room: {{ session.room.name }} • 
+                            Ended: {{ session.finish_date|date:"M d, Y" }}
+                        </div>
+                    </div>
+                    <div class="session-status status-past">Completed</div>
+                </li>
+            {% endfor %}
+        </ul>
+    {% else %}
+        <div class="empty-state">
+            <div>📋</div>
+            <h3>No Past Sessions</h3>
+            <p>Your completed sessions will appear here.</p>
+        </div>
+    {% endif %}
+</div>
+
+<script>
+    // Add any JavaScript functionality here if needed
+    document.addEventListener('DOMContentLoaded', function() {
+        // Example: Add click handlers for action buttons
+        const actionButtons = document.querySelectorAll('.action-button');
+        actionButtons.forEach(button => {
+            button.addEventListener('click', function() {
+                const buttonText = this.textContent;
+                if (buttonText === 'Create New Session') {
+                    // Handle create session
+                    console.log('Create new session clicked');
+                }
+            });
+        });
+    });
+</script>
+{% endblock %}

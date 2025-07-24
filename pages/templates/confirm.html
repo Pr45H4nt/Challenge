@@ -1,0 +1,94 @@
+{% extends 'base.html' %}
+
+{% block title %}Confirm Action - Challenge{% endblock %}
+
+{% block content %}
+<div class="content-block">
+    <div style="max-width: 500px; margin: 0 auto; text-align: center;">
+        
+        <div style="
+            background: #ff6b6b;
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            margin-bottom: 2rem;
+            font-size: 18px;
+            font-weight: 500;
+        ">
+            ⚠️ Confirmation Required
+        </div>
+        
+        <div style="
+            background: #1a1a1a;
+            padding: 2rem;
+            border-radius: 8px;
+            border: 1px solid #3d3d3d;
+            margin-bottom: 2rem;
+        ">
+            <p style="color: #e0e0e0; font-size: 16px; line-height: 1.6; margin: 0;">
+                {{ message|safe }}
+            </p>
+        </div>
+        
+        <form action="" method="post" style="display: inline-block;">
+            {% csrf_token %}
+            <input type="hidden" name="referer" value="{{ referer }}">
+            
+            <div style="display: flex; gap: 15px; justify-content: center;">
+                <input type="submit" value="Yes, Continue" style="
+                    background: #ff6b6b;
+                    color: white;
+                    border: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-size: 16px;
+                    font-weight: 500;
+                    cursor: pointer;
+                    min-width: 120px;
+                    transition: background 0.3s ease;
+                " onmouseover="this.style.background='#e74c3c'" onmouseout="this.style.background='#ff6b6b'">
+                
+                <a href="{{ referer }}" style="
+                    background: #3d3d3d;
+                    color: #e0e0e0;
+                    text-decoration: none;
+                    padding: 12px 24px;
+                    border-radius: 6px;
+                    font-size: 16px;
+                    font-weight: 500;
+                    display: inline-block;
+                    min-width: 120px;
+                    text-align: center;
+                    border: 1px solid #4d4d4d;
+                    transition: all 0.3s ease;
+                " onmouseover="this.style.background='#4d4d4d'; this.style.borderColor='#5d5d5d'" onmouseout="this.style.background='#3d3d3d'; this.style.borderColor='#4d4d4d'">
+                    Cancel
+                </a>
+            </div>
+        </form>
+        
+        <div style="margin-top: 1.5rem; color: #888; font-size: 14px;">
+            This action is sensitive
+        </div>
+        
+    </div>
+</div>
+
+<style>
+@media (max-width: 768px) {
+    .content-block > div {
+        padding: 1rem !important;
+    }
+    
+    form > div {
+        flex-direction: column !important;
+        gap: 10px !important;
+    }
+    
+    form input[type="submit"],
+    form a {
+        width: 100% !important;
+    }
+}
+</style>
+{% endblock %}

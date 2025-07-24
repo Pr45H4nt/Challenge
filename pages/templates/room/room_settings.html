@@ -1,0 +1,658 @@
+{% extends 'base.html' %}
+
+{% block title %}{{ room.name }} - Settings{% endblock %}
+
+{% block content %}
+{% csrf_token %}
+
+<div class="settings-header">
+    <div class="header-info">
+        <h1>Room Settings</h1>
+        <p class="room-name">{{ room.name }}</p>
+    </div>
+    <div class="header-actions">
+        <a href="{% url 'room' room_id=room.id %}" class="btn btn-secondary">← Back to Room</a>
+    </div>
+</div>
+
+<div class="settings-content">
+    <!-- Room Details Section -->
+    {% if request.user == room.admin %}
+        <div class="settings-card">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">📝</span>
+                    Room Details
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Update room name and description to keep members informed.</p>
+                <div class="form-actions">
+                    <a href="{% url 'update-room-info' room_id=room.id %}" class="btn btn-primary">Update Details</a>
+                </div>
+            </div>
+        </div>
+
+        <!-- Password Section -->
+        <div class="settings-card">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">🔒</span>
+                    Room Password
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Change the password required to join this room.</p>
+                <div class="form-actions">
+                    <a href="{% url 'change-room-pass' room_id=room.id %}" class="btn btn-primary">Update Password</a>
+                </div>
+            </div>
+        </div>
+    {% endif %}
+
+    {% if user == room.admin %}
+        <!-- Transfer Ownership Section -->
+        <div class="settings-card danger-section">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">👑</span>
+                    Transfer Ownership
+                </h2>
+            </div>
+            <div class="card-body">
+                <form method="POST" action="{% url 'transfer-ownership' %}">
+                    {% csrf_token %}
+                    <div class="form-group">
+                        <input type="hidden" name="room_id" value="{{room.id}}">
+                        <label for="new_admin">New Admin</label>
+                        <select id="new_admin" name="new_admin" required>
+                            <option value="">Select a member to transfer ownership to</option>
+                            {% for member in room.members.all %}
+                                {% if member != room.admin %}
+                                    <option value="{{ member.id }}">{{ member.username }}</option>
+                                {% endif %}
+                            {% endfor %}
+                        </select>
+                        <small class="form-help">This action cannot be undone. You will lose admin privileges.</small>
+                    </div>
+                    <div class="form-actions">
+                        <button type="submit" class="btn btn-warning" onclick="return confirmTransferOwnership()">Transfer Ownership</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+
+        <!-- Delete Room Section -->
+        <div class="settings-card danger-section">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">🗑️</span>
+                    Delete Room
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Permanently delete this room and all associated data including sessions, rankings, and member history.</p>
+                <div class="warning-box">
+                    <span class="warning-icon">⚠️</span>
+                    <span>This action cannot be undone. All data will be lost forever.</span>
+                </div>
+                <form method="POST" action="{% url 'delete-room' %}" onsubmit="return confirmDeleteRoom()">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <input type="hidden" name="room_id" value="{{room.id}}">
+                        <button type="submit" class="btn btn-danger">Delete Room Forever</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% endif %}
+
+    <!-- Leave Room Section -->
+    {% if user != room.admin %}
+        <div class="settings-card danger-section">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">🚪</span>
+                    Leave Room
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">Leave this room and lose access to all sessions and data.</p>
+                <div class="warning-box">
+                    <span class="warning-icon">⚠️</span>
+                    <span>You will need to be re-invited to join again.</span>
+                </div>
+                <form method="POST" action="{% url 'leave-room' %}" onsubmit="return confirmLeaveRoom()">
+                    {% csrf_token %}
+                    <div class="form-actions">
+                        <input type="hidden" name="room_id" value="{{room.id}}">
+                        <button type="submit" class="btn btn-danger">Leave Room</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    {% else %}
+        <div class="settings-card info-section">
+            <div class="card-header">
+                <h2>
+                    <span class="card-icon">ℹ️</span>
+                    Admin Note
+                </h2>
+            </div>
+            <div class="card-body">
+                <p class="card-description">As the room admin, you cannot leave the room. You must either transfer ownership to another member or delete the room.</p>
+            </div>
+        </div>
+    {% endif %}
+</div>
+
+<style>
+/* Global Variables */
+:root {
+    --primary-color: #4a90e2;
+    --primary-hover: #357abd;
+    --secondary-color: #6c757d;
+    --success-color: #28a745;
+    --warning-color: #f39c12;
+    --warning-hover: #e67e22;
+    --danger-color: #dc3545;
+    --danger-hover: #c82333;
+    --info-color: #17a2b8;
+    --info-hover: #138496;
+    
+    --bg-primary: #1a1a1a;
+    --bg-secondary: #2d2d2d;
+    --bg-tertiary: #252525;
+    --bg-card: #2d2d2d;
+    
+    --text-primary: #e0e0e0;
+    --text-secondary: #b0b0b0;
+    --text-muted: #888;
+    
+    --border-color: #3d3d3d;
+    --border-radius: 12px;
+    --border-radius-sm: 8px;
+    
+    --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+    --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+    --shadow-lg: 0 8px 24px rgba(0, 0, 0, 0.2);
+    
+    --transition: all 0.3s ease;
+}
+
+/* Settings Header */
+.settings-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 2rem;
+    padding: 2rem;
+    background: linear-gradient(135deg, var(--bg-secondary) 0%, var(--bg-primary) 100%);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    box-shadow: var(--shadow-md);
+}
+
+.header-info h1 {
+    color: var(--text-primary);
+    font-size: 2.5rem;
+    font-weight: 700;
+    margin-bottom: 0.5rem;
+    line-height: 1.2;
+}
+
+.room-name {
+    color: var(--primary-color);
+    font-size: 1.2rem;
+    font-weight: 600;
+    margin: 0;
+    opacity: 0.9;
+}
+
+.header-actions {
+    flex-shrink: 0;
+}
+
+/* Button Styles */
+.btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    padding: 0.75rem 1.5rem;
+    border-radius: var(--border-radius-sm);
+    text-decoration: none;
+    font-weight: 600;
+    font-size: 0.9rem;
+    line-height: 1.4;
+    border: none;
+    cursor: pointer;
+    transition: var(--transition);
+    min-height: 44px;
+    position: relative;
+    overflow: hidden;
+}
+
+.btn:focus {
+    outline: 2px solid transparent;
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.3);
+}
+
+.btn-primary {
+    background: var(--primary-color);
+    color: white;
+}
+
+.btn-primary:hover {
+    background: var(--primary-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(74, 144, 226, 0.3);
+}
+
+.btn-secondary {
+    background: transparent;
+    color: var(--primary-color);
+    border: 2px solid var(--primary-color);
+}
+
+.btn-secondary:hover {
+    background: var(--primary-color);
+    color: white;
+    transform: translateY(-1px);
+    box-shadow: var(--shadow-md);
+}
+
+.btn-warning {
+    background: var(--warning-color);
+    color: white;
+}
+
+.btn-warning:hover {
+    background: var(--warning-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(243, 156, 18, 0.3);
+}
+
+.btn-danger {
+    background: var(--danger-color);
+    color: white;
+}
+
+.btn-danger:hover {
+    background: var(--danger-hover);
+    transform: translateY(-1px);
+    box-shadow: 0 4px 16px rgba(220, 53, 69, 0.3);
+}
+
+/* Settings Content */
+.settings-content {
+    display: flex;
+    flex-direction: column;
+    gap: 1.5rem;
+}
+
+/* Settings Cards */
+.settings-card {
+    background: var(--bg-card);
+    border-radius: var(--border-radius);
+    border: 1px solid var(--border-color);
+    overflow: hidden;
+    box-shadow: var(--shadow-sm);
+    transition: var(--transition);
+}
+
+.settings-card:hover {
+    box-shadow: var(--shadow-md);
+    transform: translateY(-2px);
+}
+
+.card-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid var(--border-color);
+    background: var(--bg-tertiary);
+}
+
+.card-header h2 {
+    color: var(--text-primary);
+    font-size: 1.4rem;
+    font-weight: 600;
+    margin: 0;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+}
+
+.card-icon {
+    font-size: 1.3rem;
+    opacity: 0.9;
+}
+
+.card-body {
+    padding: 2rem;
+}
+
+.card-description {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+    line-height: 1.6;
+    margin: 0 0 1.5rem 0;
+}
+
+/* Form Styles */
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group:last-child {
+    margin-bottom: 0;
+}
+
+.form-group label {
+    display: block;
+    color: var(--text-primary);
+    font-weight: 600;
+    font-size: 0.9rem;
+    margin-bottom: 0.5rem;
+}
+
+.form-group input[type="text"],
+.form-group input[type="password"],
+.form-group textarea,
+.form-group select {
+    width: 100%;
+    padding: 0.875rem 1rem;
+    background: var(--bg-primary);
+    border: 2px solid var(--border-color);
+    border-radius: var(--border-radius-sm);
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    line-height: 1.4;
+    transition: var(--transition);
+    box-sizing: border-box;
+}
+
+.form-group input:focus,
+.form-group textarea:focus,
+.form-group select:focus {
+    outline: none;
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(74, 144, 226, 0.1);
+}
+
+.form-group textarea {
+    resize: vertical;
+    min-height: 120px;
+    font-family: inherit;
+}
+
+.form-help {
+    color: var(--text-muted);
+    font-size: 0.8rem;
+    font-style: italic;
+    margin-top: 0.5rem;
+    display: block;
+    line-height: 1.4;
+}
+
+.form-actions {
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid var(--border-color);
+    display: flex;
+    gap: 1rem;
+    flex-wrap: wrap;
+}
+
+/* Danger Sections */
+.danger-section {
+    border-color: var(--danger-color);
+    box-shadow: 0 2px 8px rgba(220, 53, 69, 0.1);
+}
+
+.danger-section .card-header {
+    background: linear-gradient(135deg, var(--danger-color) 0%, var(--danger-hover) 100%);
+    color: white;
+}
+
+.danger-section .card-header h2 {
+    color: white;
+}
+
+.warning-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 0.75rem;
+    padding: 1rem 1.25rem;
+    background: rgba(220, 53, 69, 0.1);
+    border: 1px solid rgba(220, 53, 69, 0.3);
+    border-radius: var(--border-radius-sm);
+    margin: 1rem 0;
+}
+
+.warning-icon {
+    font-size: 1.2rem;
+    color: var(--danger-color);
+    flex-shrink: 0;
+    margin-top: 0.1rem;
+}
+
+.warning-box span:last-child {
+    color: var(--danger-color);
+    font-weight: 600;
+    line-height: 1.4;
+}
+
+/* Info Section */
+.info-section {
+    border-color: var(--info-color);
+    box-shadow: 0 2px 8px rgba(23, 162, 184, 0.1);
+}
+
+.info-section .card-header {
+    background: linear-gradient(135deg, var(--info-color) 0%, var(--info-hover) 100%);
+    color: white;
+}
+
+.info-section .card-header h2 {
+    color: white;
+}
+
+.info-section .card-description {
+    color: var(--info-color);
+    font-weight: 500;
+    margin-bottom: 0;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+    .settings-header {
+        flex-direction: column;
+        gap: 1.5rem;
+        padding: 1.5rem;
+    }
+    
+    .header-info h1 {
+        font-size: 2rem;
+    }
+    
+    .room-name {
+        font-size: 1.1rem;
+    }
+    
+    .card-body {
+        padding: 1.5rem;
+    }
+    
+    .card-header {
+        padding: 1rem 1.5rem;
+    }
+    
+    .card-header h2 {
+        font-size: 1.2rem;
+    }
+    
+    .form-actions {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .btn {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .warning-box {
+        flex-direction: column;
+        gap: 0.5rem;
+        text-align: center;
+    }
+    
+    .warning-icon {
+        align-self: center;
+    }
+}
+
+@media (max-width: 480px) {
+    .settings-header {
+        padding: 1rem;
+    }
+    
+    .header-info h1 {
+        font-size: 1.75rem;
+    }
+    
+    .card-body {
+        padding: 1rem;
+    }
+    
+    .card-header {
+        padding: 0.75rem 1rem;
+    }
+    
+    .form-actions {
+        margin-top: 1.5rem;
+        padding-top: 1rem;
+    }
+}
+
+/* Loading States */
+.btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+    transform: none !important;
+}
+
+/* Accessibility Improvements */
+@media (prefers-reduced-motion: reduce) {
+    * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+/* Focus styles for better accessibility */
+.btn:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+
+input:focus-visible,
+textarea:focus-visible,
+select:focus-visible {
+    outline: 2px solid var(--primary-color);
+    outline-offset: 2px;
+}
+</style>
+
+<script>
+// Confirmation dialogs
+function confirmDeleteRoom() {
+    return confirm('Are you sure you want to delete this room? This action cannot be undone and all data will be lost.');
+}
+
+function confirmLeaveRoom() {
+    return confirm('Are you sure you want to leave this room? You will lose access to all sessions and data.');
+}
+
+function confirmTransferOwnership() {
+    const selectedUser = document.querySelector('select[name="new_admin"]').value;
+    if (!selectedUser) {
+        alert('Please select a new admin first.');
+        return false;
+    }
+    const userName = document.querySelector('select[name="new_admin"] option:checked').text;
+    return confirm(`Are you sure you want to transfer ownership to ${userName}? You will lose admin privileges.`);
+}
+
+// Toggle password visibility
+function togglePassword() {
+    const passwordInput = document.getElementById('room_password');
+    const toggleBtn = document.querySelector('.password-toggle');
+    
+    if (passwordInput && toggleBtn) {
+        if (passwordInput.type === 'password') {
+            passwordInput.type = 'text';
+            toggleBtn.textContent = '🙈';
+        } else {
+            passwordInput.type = 'password';
+            toggleBtn.textContent = '👁️';
+        }
+    }
+}
+
+// Form validation
+function validateRoomDetails() {
+    const roomName = document.getElementById('room_name');
+    if (roomName) {
+        const roomNameValue = roomName.value.trim();
+        if (roomNameValue.length < 3) {
+            alert('Room name must be at least 3 characters long.');
+            return false;
+        }
+    }
+    return true;
+}
+
+function validatePassword() {
+    const password = document.getElementById('room_password');
+    if (password) {
+        const passwordValue = password.value;
+        if (passwordValue && passwordValue.length < 6) {
+            alert('Password must be at least 6 characters long.');
+            return false;
+        }
+    }
+    return true;
+}
+
+// Enhanced form interactions
+document.addEventListener('DOMContentLoaded', function() {
+    // Add loading states to forms
+    const forms = document.querySelectorAll('form');
+    forms.forEach(form => {
+        form.addEventListener('submit', function() {
+            const submitBtn = form.querySelector('button[type="submit"]');
+            if (submitBtn) {
+                submitBtn.disabled = true;
+                submitBtn.style.opacity = '0.6';
+                setTimeout(() => {
+                    submitBtn.disabled = false;
+                    submitBtn.style.opacity = '1';
+                }, 3000);
+            }
+        });
+    });
+    
+    // Enhance select dropdown
+    const selectElements = document.querySelectorAll('select');
+    selectElements.forEach(select => {
+        select.addEventListener('change', function() {
+            if (this.value) {
+                this.style.borderColor = 'var(--primary-color)';
+            } else {
+                this.style.borderColor = 'var(--border-color)';
+            }
+        });
+    });
+});
+</script>
+{% endblock %}

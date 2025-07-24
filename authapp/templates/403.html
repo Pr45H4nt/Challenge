@@ -1,0 +1,21 @@
+{% extends "base.html" %}
+
+{% block title %}Permission Denied{% endblock %}
+
+{% block content %}
+
+
+    
+<div class="text-center mt-20">
+    <h1 class="text-4xl font-bold text-red-600">403 - Permission Denied</h1>
+    <p class="mt-4 text-gray-700">You don't have permission to access this page.</p>
+    {% if request.user.username == 'demouser' %}
+
+<p>You are using Demo Account, You must login from real account to do this action</p>
+<p>This action is done to retrict spam, abuse from the demo account</p>
+{% endif %}
+    <a href="{% url 'home' %}" class="mt-6 inline-block bg-blue-500 text-white px-4 py-2 rounded">Go Home</a>
+</div>
+
+
+{% endblock %}

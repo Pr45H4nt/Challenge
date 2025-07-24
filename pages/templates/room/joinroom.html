@@ -1,0 +1,183 @@
+{% extends 'base.html' %}
+
+{% block title %}Join Room{% endblock %}
+
+{% block content %}
+<div class="form-container">
+    
+    
+    <div class="form-card">
+        <h1>Join Room</h1>
+        <p class="form-subtitle">Enter the room details to join a session</p>
+        
+        {% if form.errors %}
+    <ul style="color: #ff6b6b; margin-bottom: 1.5rem;">
+        {% for field, errors in form.errors.items %}
+            {% for error in errors %}
+                <li>{{ error }}</li>
+            {% endfor %}
+        {% endfor %}
+    </ul>
+{% endif %}
+
+        <form method="post" class="join-form">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label for="{{ form.name.id_for_label }}">Room Name</label>
+                {{ form.name }}
+            </div>
+            
+            <div class="form-group">
+                <label for="{{ form.password.id_for_label }}">Password</label>
+                {{ form.password }}
+                <small class="helper-text">Leave blank if the room has no password</small>
+            </div>
+            
+            <button type="submit" class="btn btn-primary">Join Room</button>
+            
+            <div class="form-footer">
+                <p>Don't have a room? <a href="{% url 'createroom' %}">Create one</a></p>
+            </div>
+        </form>
+    </div>
+</div>
+
+<style>
+.form-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 60vh;
+    padding: 2rem 0;
+}
+
+.form-card {
+    background: #2d2d2d;
+    padding: 3rem;
+    border-radius: 12px;
+    border: 1px solid #3d3d3d;
+    width: 100%;
+    max-width: 400px;
+    box-shadow: 0 8px 25px rgba(0, 0, 0, 0.3);
+}
+
+.form-card h1 {
+    color: #e0e0e0;
+    text-align: center;
+    margin-bottom: 0.5rem;
+    font-size: 2rem;
+}
+
+.form-subtitle {
+    color: #b0b0b0;
+    text-align: center;
+    margin-bottom: 2rem;
+    font-size: 0.9rem;
+}
+
+.join-form {
+    width: 100%;
+}
+
+.form-group {
+    margin-bottom: 1.5rem;
+}
+
+.form-group label {
+    display: block;
+    color: #e0e0e0;
+    margin-bottom: 0.5rem;
+    font-weight: 500;
+}
+
+.form-input,
+.form-group input,
+.form-group input[type="text"],
+.form-group input[type="password"] {
+    width: 100%;
+    padding: 0.8rem;
+    background: #1a1a1a;
+    border: 1px solid #3d3d3d;
+    border-radius: 6px;
+    color: #e0e0e0;
+    font-size: 1rem;
+    transition: border-color 0.3s ease;
+}
+
+.form-input:focus,
+.form-group input:focus {
+    outline: none;
+    border-color: #4a90e2;
+    box-shadow: 0 0 0 2px rgba(74, 144, 226, 0.1);
+}
+
+.form-input::placeholder,
+.form-group input::placeholder {
+    color: #666;
+}
+
+.helper-text {
+    color: #888;
+    font-size: 0.8rem;
+    margin-top: 0.3rem;
+    display: block;
+}
+
+.btn {
+    width: 100%;
+    padding: 0.8rem;
+    border: none;
+    border-radius: 6px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.3s ease;
+    margin-top: 1rem;
+}
+
+.btn-primary {
+    background: #4a90e2;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #357abd;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(74, 144, 226, 0.3);
+}
+
+.form-footer {
+    text-align: center;
+    margin-top: 2rem;
+    padding-top: 1.5rem;
+    border-top: 1px solid #3d3d3d;
+}
+
+.form-footer p {
+    color: #b0b0b0;
+    font-size: 0.9rem;
+}
+
+.form-footer a {
+    color: #4a90e2;
+    text-decoration: none;
+}
+
+.form-footer a:hover {
+    text-decoration: underline;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .form-card {
+        margin: 1rem;
+        padding: 2rem;
+    }
+    
+    .form-card h1 {
+        font-size: 1.5rem;
+    }
+}
+</style>
+{% endblock %}

@@ -1,0 +1,76 @@
+{% extends 'base.html' %}
+
+{% block title %}Add New Task - Challenge{% endblock %}
+
+{% block content %}
+<div class="content-block">
+    <h1 style="color: #4a90e2; margin-bottom: 2rem; text-align: center;">Edit Room Details</h1>
+    
+    <form method="post" style="max-width: 400px; margin: 0 auto;">
+        {% csrf_token %}
+        
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #e0e0e0;">Room Name</label>
+            <input type="text" name="name" style="
+                width: 100%;
+                padding: 12px;
+                background: #1a1a1a;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 16px;
+                box-sizing: border-box;
+            " placeholder="Enter your room name here..." value="{{room.name}}">
+            
+            {% if form.name.errors %}
+                {% for error in form.name.errors %}
+                    <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+
+        <div style="margin-bottom: 1.5rem;">
+            <label style="display: block; margin-bottom: 0.5rem; color: #e0e0e0;">Room Bio</label>
+            <input type="text" name="bio" style="
+                width: 100%;
+                padding: 12px;
+                background: #1a1a1a;
+                border: 1px solid #3d3d3d;
+                border-radius: 6px;
+                color: #e0e0e0;
+                font-size: 16px;
+                box-sizing: border-box;
+            " placeholder="Describe what this room is for..." value="{{room.bio}}">
+            
+            {% if form.bio.errors %}
+                {% for error in form.bio.errors %}
+                    <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
+                {% endfor %}
+            {% endif %}
+        </div>
+        
+        <div style="text-align: center;">
+            <button type="submit" style="
+                background: #4a90e2;
+                color: white;
+                border: none;
+                padding: 12px 24px;
+                border-radius: 6px;
+                font-size: 16px;
+                cursor: pointer;
+                margin-right: 10px;
+            ">Update Details</button>
+            
+            <a href="{% url 'room-settings' room_id=room.id %}" style="
+                background: #3d3d3d;
+                color: #e0e0e0;
+                text-decoration: none;
+                padding: 12px 24px;
+                border-radius: 6px;
+                font-size: 16px;
+                display: inline-block;
+            ">Cancel</a>
+        </div>
+    </form>
+</div>
+{% endblock %}
