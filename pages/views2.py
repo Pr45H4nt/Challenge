@@ -17,7 +17,7 @@ from .decorators import not_demo_user
 
 
     
-class TodoCreateFromSession(NotDemoUserMixin,LRM,MemberRequiredMixin, CreateView):
+class TodoCreateFromSession(LRM,NotDemoUserMixin,MemberRequiredMixin, CreateView):
     fields = ['task',]
     template_name = 'session/addtodo.html'
     model = Todo
@@ -42,6 +42,10 @@ class TodoCreateFromSession(NotDemoUserMixin,LRM,MemberRequiredMixin, CreateView
         content = f"<strong>{user}</strong> added the task <em>{task}</em> to the <strong>{session}</strong> session."
         Notice.objects.create(room=self.object.session.room, title=title, content=content, is_html=True)
 
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context['session_id'] = self.kwargs.get('session_id')
+        return context
     
     def get_form(self, form_class = None):
         form = super().get_form(form_class)
@@ -55,7 +59,7 @@ class TodoCreateFromSession(NotDemoUserMixin,LRM,MemberRequiredMixin, CreateView
         return reverse_lazy('session', kwargs = {'session_id': session_id})
     
 
-class RemoveTodoView(NotDemoUserMixin,LRM, DeleteView ):
+class RemoveTodoView(LRM,NotDemoUserMixin, DeleteView ):
     model = Todo
     pk_url_kwarg = 'task_id'
     template_name = 'confirm.html'
@@ -123,7 +127,7 @@ def toggletask(request, task_id):
     return redirect(request.META.get('HTTP_REFERER') or reverse('home'))
 
 
-class SessionCreate(NotDemoUserMixin,AdminPermRequired,CreateView):
+class SessionCreate(LRM,NotDemoUserMixin,AdminPermRequired,CreateView):
     model = Session
     fields = ['name', 'description']
     template_name = 'session/createsession.html'
@@ -158,7 +162,7 @@ class SessionCreate(NotDemoUserMixin,AdminPermRequired,CreateView):
         return reverse_lazy('session', kwargs = {'session_id': session_id})
     
 
-class SessionView(MemberRequiredMixin,DetailView):
+class SessionView(LRM,MemberRequiredMixin,DetailView):
     model = Session
     pk_url_kwarg = 'session_id'
     today = timezone.localdate()

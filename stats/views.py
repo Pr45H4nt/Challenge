@@ -71,7 +71,7 @@ class NoticeCreateView(LoginRequiredMixin,MemberRequiredMixin,CreateView):
 
 
 
-class DeleteNoticeView(NotDemoUserMixin,LoginRequiredMixin,DeleteView):
+class DeleteNoticeView(LoginRequiredMixin,NotDemoUserMixin,DeleteView):
     model = Notice
     template_name = 'confirm.html'
     pk_url_kwarg = 'notice_id'

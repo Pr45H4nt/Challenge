@@ -34,7 +34,7 @@ class RoomCreateView(LoginRequiredMixin,CreateView):
     
 
 
-class RoomJoinView(NotDemoUserMixin, LoginRequiredMixin,FormView):
+class RoomJoinView(LoginRequiredMixin, NotDemoUserMixin,FormView):
     template_name = 'room/joinroom.html'
     form_class = RoomJoinForm
 
@@ -90,7 +90,7 @@ class RoomSettingsView(LoginRequiredMixin,MemberRequiredMixin,DetailView):
 
 
 
-class RoomUpdateView(NotDemoUserMixin,LoginRequiredMixin, AdminPermRequired,UpdateView ):
+class RoomUpdateView(LoginRequiredMixin,NotDemoUserMixin, AdminPermRequired,UpdateView ):
     model = Room
     fields = ['name', 'bio']
     pk_url_kwarg = 'room_id'
@@ -101,7 +101,7 @@ class RoomUpdateView(NotDemoUserMixin,LoginRequiredMixin, AdminPermRequired,Upda
     def get_success_url(self):
         return reverse_lazy('room-settings', kwargs={'room_id':self.object.id})
     
-class ChangeRoomPasswordView(NotDemoUserMixin, LoginRequiredMixin, AdminPermRequired,View):
+class ChangeRoomPasswordView(LoginRequiredMixin,NotDemoUserMixin, AdminPermRequired,View):
     template_name = 'room/change_room_pass.html'
 
     def get(self, request, room_id):
@@ -141,7 +141,7 @@ class SessionSettingsView(LoginRequiredMixin,MemberRequiredMixin,DetailView):
 
 
 
-class SessionUpdateView(NotDemoUserMixin,LoginRequiredMixin, AdminPermRequired,UpdateView ):
+class SessionUpdateView(LoginRequiredMixin,NotDemoUserMixin, AdminPermRequired,UpdateView ):
     model = Session
     fields = ['name', 'description']
     pk_url_kwarg = 'session_id'
