@@ -35,7 +35,7 @@
                                     <span class="stat-label">Owned Rooms</span>
                                 </div>
                                 <div class="stat-item">
-                                    <span class="stat-number">{{ profile.user.total_hours|default:0 }}</span>
+                                    <span class="stat-number">{{ profile.user.total_hours|default:0|floatformat:2 }}</span>
                                     <span class="stat-label">Total Hours</span>
                                 </div>
                             </div>

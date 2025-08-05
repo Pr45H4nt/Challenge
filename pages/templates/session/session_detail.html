@@ -156,7 +156,7 @@
                                             </div>
                                             <div class="stat-item total">
                                                 <span class="stat-icon">📊</span>
-                                                <span class="stat-value">{{todo.total_hours|default:"0"}}h</span>
+                                                <span class="stat-value">{{todo.total_hours|default:"0"|floatformat:2}}h</span>
                                                 <span class="stat-label">total</span>
                                             </div>
                                         </div>
@@ -275,8 +275,8 @@
                                         <div class="friend-details">
                                             <h4 class="friend-name">{{member}}</h4>
                                             <div class="friend-stats">
-                                                <span class="stat-today">{{member.total_hours_today|default:"0"}}h today</span>
-                                                <span class="stat-total">{{member.total_hours_all|default:"0"}}h total</span>
+                                                <span class="stat-today">{{member.total_hours_today|default:"0"|floatformat:2}}h today</span>
+                                                <span class="stat-total">{{member.total_hours_all|default:"0"|floatformat:2}}h total</span>
                                             </div>
                                         </div>
                                     </div>
@@ -302,8 +302,8 @@
                                                 <div class="task-info">
                                                     <span class="task-name">{{todo.task}}</span>
                                                     <div class="task-progress">
-                                                        <span class="progress-today">+{{todo.filledtoday|default:"0"}}h</span>
-                                                        <span class="progress-total">{{todo.total_hours|default:"0"}}h total</span>
+                                                        <span class="progress-today">+{{todo.filledtoday|default:"0"|floatformat:2}}h</span>
+                                                        <span class="progress-total">{{todo.total_hours|default:"0"|floatformat:2}}h total</span>
                                                     </div>
                                                 </div>
                                                 <div class="task-status">
@@ -385,7 +385,7 @@
                                 </div>
                                 <div class="rank-info">
                                     <span class="rank-username">{{rank.user}}</span>
-                                    <span class="rank-score">{{rank.total_hours|default:"0"}}h total</span>
+                                    <span class="rank-score">{{rank.total_hours|default:"0"|floatformat:2}}h total</span>
                                 </div>
                             </div>
                         {% empty %}

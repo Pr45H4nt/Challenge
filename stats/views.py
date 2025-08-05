@@ -106,7 +106,7 @@ def toggle_pin(request, notice_id):
 
 
 
-class SessionStats(LoginRequiredMixin,DetailView):
+class SessionStats(LoginRequiredMixin, DetailView):
     model = Session
     pk_url_kwarg = 'session_id'
     context_object_name = 'session'
@@ -147,6 +147,59 @@ class SessionStats(LoginRequiredMixin,DetailView):
         context['summary_stats'] = self.get_summary_stats(session)
         return context
     
+    def get_date_range(self, session):
+        """Get complete date range for the session"""
+        # Get the earliest and latest dates from TrackTodo entries
+        tracktodos = TrackTodo.objects.filter(todo__session=session)
+        
+        if not tracktodos.exists():
+            # If no data, use session start/end dates or current date
+            start_date = session.start_date.date() if session.start_date else timezone.now().date()
+            end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
+            # Handle if start_date/finish_date are already date objects
+            if hasattr(session.start_date, 'date'):
+                start_date = session.start_date.date() if session.start_date else timezone.now().date()
+            else:
+                start_date = session.start_date if session.start_date else timezone.now().date()
+            
+            if hasattr(session.finish_date, 'date'):
+                end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
+            else:
+                end_date = session.finish_date if session.finish_date else timezone.now().date()
+            
+            return start_date, end_date
+        
+        dates = tracktodos.values_list('day', flat=True)
+        start_date = min(dates)
+        end_date = max(dates)
+        
+        # Optionally, you can extend to session boundaries if available
+        # Convert datetime to date if necessary
+        session_start = session.start_date
+        session_end = session.finish_date
+        
+        if session_start:
+            if hasattr(session_start, 'date'):
+                session_start = session_start.date()
+            if session_start < start_date:
+                start_date = session_start
+                
+        if session_end:
+            if hasattr(session_end, 'date'):
+                session_end = session_end.date()
+            if session_end > end_date:
+                end_date = session_end
+            
+        return start_date, end_date
+
+    def generate_date_range(self, start_date, end_date):
+        """Generate all dates between start and end date"""
+        dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            dates.append(current_date)
+            current_date += timedelta(days=1)
+        return dates
 
     def get_session_basic_stats(self, session):
         """get basic session information"""
@@ -168,54 +221,58 @@ class SessionStats(LoginRequiredMixin,DetailView):
         }
 
     def get_daily_total_hours_data(self, session):
-        tracktodos = TrackTodo.objects.filter(todo__session = session).order_by('day')
-
+        """Get cumulative daily hours with all dates included"""
+        tracktodos = TrackTodo.objects.filter(todo__session=session).order_by('day')
+        
+        # Get date range
+        start_date, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(start_date, end_date)
+        
+        # Build hours data
         hours_data = defaultdict(float)
-
         for item in tracktodos:
             hours_data[item.day] += item.hours
         
-        sorted_days = sorted(hours_data.keys())
+        # Build complete data with all dates
         labels = []
         data = []
         cumulative = 0
-
-        for day in sorted_days:
-            cumulative += hours_data[day]
+        
+        for day in all_dates:
+            cumulative += hours_data.get(day, 0)  # Use 0 if no data for this day
             labels.append(day)
             data.append(cumulative)
         
-
         return {
-            'labels' : labels,
-            'data' : data
+            'labels': labels,
+            'data': data
         }
     
     def get_daily_hours_data(self, session):
-        tracktodos = TrackTodo.objects.filter(todo__session = session).order_by('day')
-
+        """Get daily hours with all dates included"""
+        tracktodos = TrackTodo.objects.filter(todo__session=session).order_by('day')
+        
+        # Get date range
+        start_date, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(start_date, end_date)
+        
+        # Build hours data
         hours_data = defaultdict(float)
-
         for item in tracktodos:
             hours_data[item.day] += item.hours
-
         
-        sorted_days = sorted(hours_data.keys())
-        labels = [] 
+        # Build complete data with all dates
+        labels = []
         data = []
-
-        for day in sorted_days:
+        
+        for day in all_dates:
             labels.append(day)
-            data.append(hours_data[day])
-
-        # print(labels)
-        # print(data)        
-
+            data.append(hours_data.get(day, 0))  # Use 0 if no data for this day
+        
         return {
-            'labels' : labels,
-            'data' : data
+            'labels': labels,
+            'data': data
         }
-
 
     def get_top_tasks_data(self, session):
         """Get top tasks by hours for bar chart"""
@@ -285,35 +342,35 @@ class SessionStats(LoginRequiredMixin,DetailView):
             'data': data,
             'colors': chart_colors
         }
-    
-
 
     def get_timeline_data(self, session):
+        """Get timeline data with all dates included"""
         tracktodos = TrackTodo.objects.filter(todo__session=session).select_related('todo__user')
-
+        
+        # Get date range
+        start_date, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(start_date, end_date)
+        
         # Step 1: Gather daily hours per user
         user_day_hours = defaultdict(lambda: defaultdict(float))
-        all_days = set()
         users = set()
 
         for item in tracktodos:
             user = item.todo.user
             day = item.day
             users.add(user)
-            all_days.add(day)
             user_day_hours[user][day] += item.hours
 
-        # Step 2: Sort the days
-        sorted_days = sorted(all_days)
-        labels = [str(day) for day in sorted_days]  # X-axis
+        # Step 2: Build labels from all dates
+        labels = [str(day) for day in all_dates]  # X-axis
 
         # Step 3: Build datasets per user (cumulative)
         datasets = []
         for user in users:
             data = []
             cumulative = 0
-            for day in sorted_days:
-                cumulative += user_day_hours[user].get(day, 0)
+            for day in all_dates:
+                cumulative += user_day_hours[user].get(day, 0)  # Use 0 if no data
                 data.append(cumulative)
 
             datasets.append({
@@ -326,32 +383,33 @@ class SessionStats(LoginRequiredMixin,DetailView):
             'datasets': datasets
         }
     
-    
     def get_individual_timeline_data(self, session):
+        """Get individual timeline data with all dates included"""
         tracktodos = TrackTodo.objects.filter(todo__session=session).select_related('todo__user')
-
+        
+        # Get date range
+        start_date, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(start_date, end_date)
+        
         # Step 1: Gather daily hours per user
         user_day_hours = defaultdict(lambda: defaultdict(float))
-        all_days = set()
         users = set()
 
         for item in tracktodos:
             user = item.todo.user
             day = item.day
             users.add(user)
-            all_days.add(day)
             user_day_hours[user][day] += item.hours
 
-        # Step 2: Sort the days
-        sorted_days = sorted(all_days)
-        labels = [str(day) for day in sorted_days]  # X-axis
+        # Step 2: Build labels from all dates
+        labels = [str(day) for day in all_dates]  # X-axis
 
-        # Step 3: Build datasets per user
+        # Step 3: Build datasets per user (non-cumulative)
         datasets = []
         for user in users:
             data = []
-            for day in sorted_days:
-                data.append(user_day_hours[user].get(day, 0))
+            for day in all_dates:
+                data.append(user_day_hours[user].get(day, 0))  # Use 0 if no data
 
             datasets.append({
                 'label': user.username,
@@ -362,8 +420,6 @@ class SessionStats(LoginRequiredMixin,DetailView):
             'labels': labels,
             'datasets': datasets
         }
-
-        
 
     def get_summary_stats(self, session):
         """Get additional summary statistics"""
@@ -419,8 +475,7 @@ class SessionStats(LoginRequiredMixin,DetailView):
         return max_streak
 
 
-    
-class UserSessionStats(LoginRequiredMixin,DetailView):
+class UserSessionStats(LoginRequiredMixin, DetailView):
     model = Session
     pk_url_kwarg = 'session_id'
     context_object_name = 'session'
@@ -472,6 +527,56 @@ class UserSessionStats(LoginRequiredMixin,DetailView):
         
         return context
 
+    def get_user_date_range(self, session, user):
+        """Get complete date range for the user in this session"""
+        # Get the earliest and latest dates from user's TrackTodo entries
+        user_tracktodos = TrackTodo.objects.filter(todo__session=session, todo__user=user)
+        
+        if not user_tracktodos.exists():
+            # If no data, use session start/end dates or current date
+            if hasattr(session.start_date, 'date'):
+                start_date = session.start_date.date() if session.start_date else timezone.now().date()
+            else:
+                start_date = session.start_date if session.start_date else timezone.now().date()
+            
+            if hasattr(session.finish_date, 'date'):
+                end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
+            else:
+                end_date = session.finish_date if session.finish_date else timezone.now().date()
+            
+            return start_date, end_date
+        
+        dates = user_tracktodos.values_list('day', flat=True)
+        start_date = min(dates)
+        end_date = max(dates)
+        
+        # Extend to session boundaries if available
+        session_start = session.start_date
+        session_end = session.finish_date
+        
+        if session_start:
+            if hasattr(session_start, 'date'):
+                session_start = session_start.date()
+            if session_start < start_date:
+                start_date = session_start
+                
+        if session_end:
+            if hasattr(session_end, 'date'):
+                session_end = session_end.date()
+            if session_end > end_date:
+                end_date = session_end
+            
+        return start_date, end_date
+
+    def generate_date_range(self, start_date, end_date):
+        """Generate all dates between start and end date"""
+        dates = []
+        current_date = start_date
+        while current_date <= end_date:
+            dates.append(current_date)
+            current_date += timedelta(days=1)
+        return dates
+
     def get_user_session_basic_stats(self, session, user):
         """Get basic session information for a specific user"""
         user_todos = session.todos.filter(user=user)
@@ -503,23 +608,28 @@ class UserSessionStats(LoginRequiredMixin,DetailView):
         }
 
     def get_user_daily_hours_data(self, session, user):
-        """Get daily hours data for a specific user"""
+        """Get daily hours data for a specific user with all dates included"""
         user_tracktodos = TrackTodo.objects.filter(
             todo__session=session, 
             todo__user=user
         ).order_by('day')
 
+        # Get date range
+        start_date, end_date = self.get_user_date_range(session, user)
+        all_dates = self.generate_date_range(start_date, end_date)
+
+        # Build hours data
         hours_data = defaultdict(float)
         for item in user_tracktodos:
             hours_data[item.day] += item.hours
 
-        sorted_days = sorted(hours_data.keys())
+        # Build complete data with all dates
         labels = []
         data = []
 
-        for day in sorted_days:
+        for day in all_dates:
             labels.append(day)
-            data.append(hours_data[day])
+            data.append(hours_data.get(day, 0))  # Use 0 if no data for this day
 
         return {
             'labels': labels,
@@ -527,23 +637,28 @@ class UserSessionStats(LoginRequiredMixin,DetailView):
         }
 
     def get_user_daily_cumulative_hours_data(self, session, user):
-        """Get cumulative daily hours data for a specific user"""
+        """Get cumulative daily hours data for a specific user with all dates included"""
         user_tracktodos = TrackTodo.objects.filter(
             todo__session=session, 
             todo__user=user
         ).order_by('day')
 
+        # Get date range
+        start_date, end_date = self.get_user_date_range(session, user)
+        all_dates = self.generate_date_range(start_date, end_date)
+
+        # Build hours data
         hours_data = defaultdict(float)
         for item in user_tracktodos:
             hours_data[item.day] += item.hours
 
-        sorted_days = sorted(hours_data.keys())
+        # Build complete data with all dates
         labels = []
         data = []
         cumulative = 0
 
-        for day in sorted_days:
-            cumulative += hours_data[day]
+        for day in all_dates:
+            cumulative += hours_data.get(day, 0)  # Use 0 if no data for this day
             labels.append(day)
             data.append(cumulative)
 

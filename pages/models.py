@@ -40,12 +40,6 @@ class Room(models.Model):
             return check_password(given_pass, self.password )
         return True
 
-
-        
-
-
-
-    
     @property
     def total_hours(self):
         hashmap = {}
@@ -98,14 +92,14 @@ class Session(models.Model):
     name = models.CharField(max_length=250)
     description = models.TextField(blank=True, null=True)
     start_date = models.DateTimeField(null=True,blank=True)
-    finish_date = models.DateField(null=True, blank=True)
+    finish_date = models.DateTimeField(null=True, blank=True)
     members = models.ManyToManyField(CustomUser, related_name='sessions', blank=True)
     
     def clean(self):
         if Session.objects.filter(name=self.name, room = self.room).exclude(id=self.id).exists():
             raise ValidationError({"name": "The name should be unique in a room!"})
-        if self.finish_date and self.finish_date < timezone.now().date():
-            raise ValidationError({'finish_date': "Finish date can't be in the past!"})
+        if self.finish_date and self.finish_date < self.start_date:
+            raise ValidationError({'finish_date': "Finish date can't be behind the start date"})
         
         objects = Session.objects.filter(room=self.room).exclude(id=self.id)
         for object in objects:
@@ -133,7 +127,7 @@ class Session(models.Model):
     def is_active(self):
         if not self.finish_date:
             return True
-        return self.finish_date > timezone.now().date()
+        return self.finish_date > timezone.now()
     
     @property
     def total_hours(self):
@@ -213,7 +207,7 @@ class Todo(models.Model):
 
 class TrackTodo(models.Model):
     todo = models.ForeignKey(Todo, on_delete=models.CASCADE, related_name='tracking')
-    day = models.DateField(null=True, blank=True)
+    day = models.DateField(null=True, blank=True, auto_now_add=True)
     hours = models.FloatField(default=0.0)
     hours_till_day = models.FloatField(default=0.0)
 
