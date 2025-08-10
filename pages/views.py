@@ -25,9 +25,7 @@ class RoomCreateView(LoginRequiredMixin,CreateView):
 
     def form_valid(self, form):
         form.instance.admin = self.request.user
-        response = super().form_valid(form)
-        self.object.members.add(self.request.user)
-        return response
+        return super().form_valid(form)
     
     def get_success_url(self):
         return reverse_lazy('room', kwargs={'room_id': self.object.id})
@@ -76,7 +74,6 @@ class RoomView(LoginRequiredMixin,MemberRequiredMixin,DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         room_id = self.kwargs.get('room_id')
-
         context['active_sessions'] = Session.objects.filter(room_id=room_id, finish_date__isnull= True)
         context['old_sessions'] = Session.objects.filter(room_id=room_id, finish_date__lte=date.today())
 

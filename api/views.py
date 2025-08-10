@@ -31,7 +31,7 @@ class UserAPI(APIView):
         serializer = CustomUserSerializer(data=data)
         if serializer.is_valid():
             serializer.save()
-            return Response(serializer.data)
+            return Response(serializer.data, status=status.HTTP_201_CREATED)
         return Response({'message': 'Error while creating object'}, status=status.HTTP_400_BAD_REQUEST)
     
 # if used session instead of jwt
@@ -72,9 +72,10 @@ class ProfileAPI(ModelViewSet):
     queryset = Profile.objects.all()
     http_method_names = ['get', 'post', 'put', 'patch']
     renderer_classes = [JSONRenderer]
+    permission_classes = [IsAuthenticated]
 
 
-    @action(detail=False, methods=['get'], url_path='me', url_name='my_profile')
+    @action(detail=False, methods=['get'], url_path='me', url_name='my-profile')
     def get_own_profile(self, request, *args, **kwargs):
         obj = getattr(request.user, 'profile', None)
         if obj:
@@ -113,7 +114,7 @@ class RoomAPI(ModelViewSet):
         return Response(data)
     
 
-    @action(detail=True, methods=['post'], url_path='remove', url_name='remove-user-from-room')
+    @action(detail=True, methods=['post'], url_path='remove', url_name='remove-user')
     def remove_user(self, request, *args, **kwargs):
         user_id = request.data.get("user_id")
         room = self.get_object()
@@ -131,7 +132,7 @@ class RoomAPI(ModelViewSet):
         return Response({'success': 'user is removed from the room'})
     
 
-    @action(detail=True, methods=['post'], url_name='remove-me-from-room', url_path='remove-me')
+    @action(detail=True, methods=['post'], url_name='leave', url_path='leave')
     def remove_me(self, request, *args, **kwargs):
         user = request.user
         room = self.get_object()
@@ -157,11 +158,23 @@ class RoomAPI(ModelViewSet):
         notice_transfer_ownership_logic(request, room, user_id)
         return Response({'success': 'Admin is transferred'})
     
-    @action(detail=True, methods=['get'], url_name='get-sessions', url_path='sessions')
+    @action(detail=True, methods=['get'], url_name='sessions', url_path='sessions')
     def get_sessions(self, request, *args, **kwargs):
         sessions = self.get_object().sessions.filter(members=request.user)
         data = SessionSerializer(sessions, many=True).data
         return Response(data)
+    
+    @action(detail=False, methods=['post'], url_name='join', url_path='join')
+    def join_room(self, request, *args, **kwargs):
+        name = request.data.get('name')
+        password = request.data.get('password')
+        room = get_object_or_404(Room, name=name)
+        if room.check_pass(password):
+            room.members.add(request.user)
+            room.save()
+            return Response({'success': 'you have joined the room'}, status=status.HTTP_200_OK) 
+        
+        return Response({'Error': 'Credentials wrong. Please check again.'}, status=status.HTTP_401_UNAUTHORIZED)
 
 
     def partial_update(self, request, *args, **kwargs):
@@ -199,7 +212,7 @@ class SessionAPI(ModelViewSet):
         data = SessionRankingSerializer(rankings, many=True).data
         return Response(data)
     
-    @action(detail=True, methods=['get'], url_name='remove-user-from-session', url_path='remove' )
+    @action(detail=True, methods=['post'], url_name='remove-user', url_path='remove' )
     def remove_user(self, request, *args, **kwargs):
         user_id = request.data.get('user_id')
         session = self.get_object()
@@ -217,7 +230,7 @@ class SessionAPI(ModelViewSet):
         return Response({"Success": "User is removed from the session"})
     
     
-    @action(detail=True, methods=['get'], url_name='remove-me-from-session', url_path='remove-me' )
+    @action(detail=True, methods=['post'], url_name='remove-me', url_path='remove-me' )
     def remove_me(self, request, *args, **kwargs):
         session = self.get_object()
 
@@ -229,17 +242,17 @@ class SessionAPI(ModelViewSet):
         return Response({"Success": "you are removed from the session"})
     
     
-    @action(detail=True, methods=['get'], url_name='start-session', url_path='start' )
+    @action(detail=True, methods=['post'], url_name='start-session', url_path='start' )
     def start_session(self, request, *args, **kwargs):
         session = self.get_object()
-        start_session_logic(request, session_id)
+        start_session_logic(request, session.id)
         return Response({"Success": "session started"})
 
     
-    @action(detail=True, methods=['get'], url_name='end-session', url_path='end' )
+    @action(detail=True, methods=['post'], url_name='end-session', url_path='end' )
     def end_session(self, request, *args, **kwargs):
         session = self.get_object()
-        end_session_logic(request, session)
+        end_session_logic(request, session.id)
         return Response({"Success": "session ended"})
 
     @action(detail=True, methods=['get'], url_name='get-todos', url_path='todos' )
@@ -249,7 +262,7 @@ class SessionAPI(ModelViewSet):
         return Response(data)
     
     @action(detail=True, methods=['get'], url_name='get-my-todos', url_path='my-todos' )
-    def get_todos(self, request, *args, **kwargs):
+    def get_my_todos(self, request, *args, **kwargs):
         session = self.get_object()
         data = TodoSerializer(session.todos.filter(user=request.user), many=True).data
         return Response(data)

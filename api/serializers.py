@@ -74,10 +74,9 @@ class CustomUserSerializer(serializers.ModelSerializer):
 
 
 class RoomSerializer(serializers.ModelSerializer):
-    password = serializers.CharField(write_only = True)
+    password = serializers.CharField(write_only = True, required=False)
     locked = serializers.SerializerMethodField()
     admin = serializers.SerializerMethodField()
-    admin_id = serializers.PrimaryKeyRelatedField(queryset=CustomUser.objects.all(), write_only=True, source = 'admin')
     members = serializers.SerializerMethodField()
 
     class Meta:
@@ -98,6 +97,7 @@ class RoomSerializer(serializers.ModelSerializer):
         return members
     
     def create(self, validated_data):
+        validated_data['admin'] = self.context.get('request').user
         members = [validated_data['admin']]
         room = super().create(validated_data)
         room.members.set(members)
@@ -109,7 +109,7 @@ class SessionSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
     start_date = serializers.ReadOnlyField()
     finish_date = serializers.ReadOnlyField()
-    room_id = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all(), source = 'room')
+    room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
     is_active = serializers.ReadOnlyField()
 
     class Meta:
@@ -128,11 +128,6 @@ class SessionSerializer(serializers.ModelSerializer):
             raise serializers.ValidationError("You are not the admin of the room")
         return attrs
     
-    def create(self, validated_data):
-        user = self.context.get('request').user
-        session = super().create(validated_data)
-        session.members.set(user)
-        return session
     
 
 class RoomRankingSerializer(serializers.ModelSerializer):

@@ -85,11 +85,11 @@ def end_session_logic(request, session_id):
     session = Session.objects.get(id=session_id)
     if session.start_date:
         if session.room.admin == request.user:
-            session.finish_date = timezone.now().date()
+            session.finish_date = timezone.now()
             for task in session.todos.all():
                 if not task.completed:
                     task.completed = True
-                    task.completed_date = timezone.now().date()
+                    task.completed_date = timezone.now()
                     task.save()
             session.save()
             session.room.updateRoomRankings()

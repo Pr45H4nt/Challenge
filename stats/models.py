@@ -2,6 +2,7 @@ from django.db import models
 from pages.models import Room, CustomUser
 import uuid
 from django.utils import timezone
+from django.core.exceptions import PermissionDenied
 
 # Create your models here.
 class Notice(models.Model):
@@ -18,6 +19,23 @@ class Notice(models.Model):
 
     class Meta:
         ordering = ['-is_pinned', '-created_on']
+
+    def clean(self):
+        room = getattr(self, 'room', None)
+        author = getattr(self, 'author', None)
+        is_admin = getattr(self, 'is_admin', None)
+        
+        if room and author:
+            if author not in room.members.all():
+                raise PermissionDenied("The author is not from the room")
+            if is_admin and author != room.admin:
+                raise PermissionDenied("Non admin cannot post as admin")
+            
+        return super().clean()
+
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save( *args, **kwargs)
 
     @property
     def is_posted_today(self):

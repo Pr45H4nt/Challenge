@@ -11,6 +11,7 @@ from django.utils import timezone
 from datetime import datetime, timedelta
 from collections import defaultdict, OrderedDict
 import json
+from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.auth.mixins import LoginRequiredMixin
 from pages.models import Room, Session, Todo, TrackTodo
@@ -54,7 +55,7 @@ class NoticeCreateView(LoginRequiredMixin,MemberRequiredMixin,CreateView):
         form.instance.author = self.request.user
         form.instance.room = get_object_or_404(Room, id=self.kwargs.get('room_id'))
         if (form.instance.is_admin or form.instance.is_pinned) and self.request.user != form.instance.room.admin:
-            return HttpResponseForbidden("No Permission")
+            raise PermissionDenied("No Permission")
         if form.instance.is_html:
             form.instance.is_html = False
 
@@ -79,7 +80,7 @@ class DeleteNoticeView(LoginRequiredMixin,NotDemoUserMixin,DeleteView):
     def get_object(self, queryset = None):
         obj= super().get_object(queryset)
         if obj.author != self.request.user and obj.room.admin != self.request.user:
-            return HttpResponseForbidden("No Permission")
+            raise PermissionDenied("No Permission")
         return obj
     
     def get_context_data(self, **kwargs):
@@ -106,7 +107,7 @@ def toggle_pin(request, notice_id):
 
 
 
-class SessionStats(LoginRequiredMixin, DetailView):
+class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
     model = Session
     pk_url_kwarg = 'session_id'
     context_object_name = 'session'
@@ -475,7 +476,7 @@ class SessionStats(LoginRequiredMixin, DetailView):
         return max_streak
 
 
-class UserSessionStats(LoginRequiredMixin, DetailView):
+class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
     model = Session
     pk_url_kwarg = 'session_id'
     context_object_name = 'session'

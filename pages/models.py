@@ -4,7 +4,6 @@ from django.contrib.auth.hashers import make_password , check_password, is_passw
 from django.core.exceptions import ValidationError
 import uuid
 from django.utils import timezone
-from datetime import datetime
 
 # Create your models here.
 
@@ -35,7 +34,6 @@ class Room(models.Model):
         super().save(*args, **kwargs)
     
     def check_pass(self, given_pass):
-        print(self.password)
         if self.password:
             return check_password(given_pass, self.password )
         return True
@@ -75,11 +73,19 @@ class Room(models.Model):
             self.save()
 
     def remove_member(self, user_id):
+        if self.admin.id == user_id:
+            raise ValidationError('Admin cannot be removed from member')
+        
+        user = CustomUser.objects.filter(id = user_id).first()
         sessions = self.sessions.all()
         for session in sessions:
             session.remove_member(user_id)
         self.members.remove(user_id)
         self.save()
+        rank = RoomRanking.objects.filter(room = self, user__id = user_id).first()
+        if rank:
+            rank.delete()
+
 
 
     def __str__(self):
@@ -98,8 +104,16 @@ class Session(models.Model):
     def clean(self):
         if Session.objects.filter(name=self.name, room = self.room).exclude(id=self.id).exists():
             raise ValidationError({"name": "The name should be unique in a room!"})
+        
+
         if self.finish_date and self.finish_date < self.start_date:
             raise ValidationError({'finish_date': "Finish date can't be behind the start date"})
+        
+        session_members = self.members.all()
+        room_members = self.room.members.all()
+        for member in session_members:
+            if member not in room_members:
+                raise ValidationError("Member not in room")
         
         objects = Session.objects.filter(room=self.room).exclude(id=self.id)
         for object in objects:
@@ -112,8 +126,8 @@ class Session(models.Model):
     
     def save(self,*args, **kwargs):
         self.clean()
+        super().save(*args, **kwargs)
         self.room.updateRoomRankings()
-        return super().save(*args, **kwargs)
     
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -158,12 +172,17 @@ class Session(models.Model):
                 start += 1
 
     def remove_member(self, user_id):
+        if str(user_id) == str(self.room.admin.id):
+            raise ValidationError("admin cannot be removed from the session")
         todos = self.todos.filter(user__id= user_id).delete()
         self.members.remove(user_id)
+        rank = SessionRanking.objects.filter(session = self, user__id = user_id).first()
+        if rank:
+            rank.delete()
         self.save()
+        self.updateSessionRanking()
     
     
-
 
 class Todo(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -179,7 +198,7 @@ class Todo(models.Model):
     
     @property
     def is_due(self):
-        return not self.completed and self.deadline < timezone.now().date()
+        return not self.completed 
     
     @property
     def total_hours(self):
@@ -198,6 +217,18 @@ class Todo(models.Model):
             return hour
         return False
     
+    def clean(self):
+        user = getattr(self,"user", None)
+        session = getattr(self,"session", None)
+        if  user and session and user not in session.members.all():
+            raise ValidationError({'user': 'user not in session members'})
+        return super().clean()
+    
+    def save(self, *args, **kwargs):
+        self.clean()
+        return super().save(*args, **kwargs)
+
+
     
     def delete(self, *args, **kwargs):
         super().delete(*args, **kwargs)
@@ -209,11 +240,15 @@ class TrackTodo(models.Model):
     todo = models.ForeignKey(Todo, on_delete=models.CASCADE, related_name='tracking')
     day = models.DateField(null=True, blank=True, auto_now_add=True)
     hours = models.FloatField(default=0.0)
-    hours_till_day = models.FloatField(default=0.0)
 
+    def clean(self):
+        if self.todo.completed:
+            raise ValidationError({'todo': 'the task is completed, hours cannot be added'})
+        return super().clean()
 
     
     def save(self, *args, **kwargs):
+        self.clean()
         returned_value = super().save(*args, **kwargs)
         self.todo.session.updateSessionRanking()
         return returned_value

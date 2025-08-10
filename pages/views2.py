@@ -13,6 +13,7 @@ from django.shortcuts import get_object_or_404
 import json
 from .decorators import not_demo_user
 from .logics import *
+from django.core.exceptions import ValidationError
         
 
 
@@ -109,10 +110,10 @@ def toggletask(request, task_id):
     if task.user == request.user:
         task.completed = not task.completed
         task.completed_on = None
-        task.save()
         if task.completed:
             task.completed_on = timezone.localdate()
             notice_toggle_task(request,task)
+        task.save()
         
     
     return redirect(request.META.get('HTTP_REFERER') or reverse('home'))
@@ -197,8 +198,10 @@ class SessionView(LRM,MemberRequiredMixin,DetailView):
         todo_id = self.request.POST.get('todo_id')
         if hours and todo_id:
             todo_inst = Todo.objects.filter(id=todo_id).first()
-            if not todo_inst.completed:
-                TrackTodo.objects.create(todo = todo_inst, day= self.today, hours = hours, hours_till_day= todo_inst.total_hours + hours )  
+            if (todo_inst.user != self.request.user):
+                raise PermissionDenied("You are not the owner of the todo")
+            if  not todo_inst.completed:
+                TrackTodo.objects.create(todo = todo_inst, day= self.today, hours = hours )  
             
         return HttpResponseRedirect(self.request.path) 
                 
@@ -207,8 +210,10 @@ class SessionView(LRM,MemberRequiredMixin,DetailView):
 
 
 def joinsession(request, session_id):
-    join_session_logic()
+    if request.method != "POST":
+        return HttpResponseNotAllowed(["POST"])
     session_obj = Session.objects.get(id=session_id)
+    join_session_logic(request, session_id=session_obj.id)
     return redirect(reverse('session', kwargs={'session_id': session_obj.id}))
     
     
@@ -218,7 +223,7 @@ def start_session(request, session_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     
-    start_session_logic()
+    start_session_logic(request, session_id)
     session = Session.objects.get(id=session_id)
     return redirect(reverse('session', kwargs={'session_id': session.id}))
 
@@ -227,7 +232,7 @@ def end_session(request, session_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     
-    end_session_logic()
+    end_session_logic(request, session_id)
     session = Session.objects.get(id=session_id)
     return redirect(reverse('room', kwargs={'room_id': session.room.id}))
 
@@ -246,7 +251,7 @@ def kick_from_room(request):
     
     room = get_object_or_404(Room,id=room_id)
     if room and request.user == room.admin:
-        if room.admin.id != user_id:
+        if str(room.admin.id) != str(user_id):
             room.remove_member(user_id)
             notice_kick_from_room_logic(request, room, user_id)
             return JsonResponse({'success': True})
@@ -279,7 +284,7 @@ def kick_from_session(request):
 
 
 @not_demo_user
-def leave_session(request, session_id):
+def leave_session(request):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
     
@@ -290,7 +295,7 @@ def leave_session(request, session_id):
         session_id = request.POST.get('session_id')
 
     session = get_object_or_404(Session, id=session_id)
-    if session and request.user in session.members.all:
+    if session and request.user in session.members.all():
         session.remove_member(request.user.id)
         notice_leave_session_logic(request,session)
         return JsonResponse({'success': True})
@@ -303,11 +308,11 @@ def leave_room(request):
     
     room_id = request.POST.get('room_id')
     room = get_object_or_404(Room,id=room_id)
-    if room:
-        if room.admin != request.user:
-            room.remove_member(request.user.id)
-            notice_leave_room_logic(request, room)
-            return redirect('home')
+
+    if room.admin != request.user:
+        room.remove_member(request.user.id)
+        notice_leave_room_logic(request, room)
+        return redirect('home')
 
 
 @not_demo_user
@@ -323,7 +328,7 @@ def transfer_ownership(request):
     room = Room.objects.filter(id=room_id).first()
     if room and room.admin == request.user:
         room.transfer_admin(user_id)
-        notice_transfer_ownership_logic(room, user_id)
+        notice_transfer_ownership_logic(request,room, user_id)
         return redirect('room', room.id)
 
 

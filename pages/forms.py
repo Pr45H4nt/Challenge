@@ -13,7 +13,6 @@ class RoomJoinForm(forms.Form):
         if not room:
             raise forms.ValidationError(f"Room does not exist by the name {cleaned_data['name']}")
         
-        print('This is the pass: ', password)
         if room.check_pass(password):
             cleaned_data['room'] = room
             return cleaned_data
@@ -22,8 +21,8 @@ class RoomJoinForm(forms.Form):
     
 class ChangeRoomPasswordForm(forms.Form):
     current_password = forms.CharField(widget=forms.PasswordInput, required=False)
-    new_password = forms.CharField(widget=forms.PasswordInput)
-    confirm_password = forms.CharField(widget=forms.PasswordInput)
+    new_password = forms.CharField(widget=forms.PasswordInput, required=False)
+    confirm_password = forms.CharField(widget=forms.PasswordInput, required=False)
 
     def clean(self):
         cleaned_data = super().clean()
