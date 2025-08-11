@@ -30,20 +30,6 @@ class TodoCreateFromSession(LRM,NotDemoUserMixin,MemberRequiredMixin, CreateView
         form.instance.user = self.request.user
         return super().form_valid(form)
     
-    def activity_notice(self):
-        profile_link = reverse_lazy('profile', kwargs={'username':self.request.user.username})
-        user = f"<a href={profile_link}>{self.request.user}</a>"
-
-        session_link = reverse_lazy('session', kwargs={'session_id': self.object.session.id})
-        task = f"<a href={session_link}>{self.object.task}</a>"
-
-        session = f"<a href={session_link}>{self.object.session.name}</a>"
-
-        # actual content
-        title = f"{user} created a new task"
-        content = f"<strong>{user}</strong> added the task <em>{task}</em> to the <strong>{session}</strong> session."
-        Notice.objects.create(room=self.object.session.room, title=title, content=content, is_html=True)
-
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         context['session_id'] = self.kwargs.get('session_id')
@@ -56,7 +42,7 @@ class TodoCreateFromSession(LRM,NotDemoUserMixin,MemberRequiredMixin, CreateView
         return form
     
     def get_success_url(self):
-        self.activity_notice()
+        task_created.send_robust(sender=Todo, task_obj = self.object)
         session_id = self.kwargs.get('session_id')
         return reverse_lazy('session', kwargs = {'session_id': session_id})
     
@@ -78,23 +64,7 @@ class RemoveTodoView(LRM,NotDemoUserMixin, DeleteView ):
         context['referer'] = self.request.META.get('HTTP_REFERER')
         return context
     
-    def activity_notice(self):
-        profile_link = reverse_lazy('profile', kwargs={'username':self.request.user.username})
-        user = f"<a href={profile_link}>{self.request.user}</a>"
-
-        session_link = reverse_lazy('session', kwargs={'session_id': self.object.session.id})
-        task = f"<a href={session_link}>{self.object.task}</a>"
-
-        session = f"<a href={session_link}>{self.object.session.name}</a>"
-
-        # actual content
-        title = f"{user} deleted a task"
-        content = f"<strong>{user}</strong> removed the task <em>{task}</em> from the <strong>{session}</strong> session."
-        Notice.objects.create(room=self.object.session.room, title=title, content=content, is_html=True)
-
-    
     def get_success_url(self):
-        self.activity_notice()
         return self.request.POST.get('referer') or reverse_lazy('home')
 
 
@@ -112,10 +82,9 @@ def toggletask(request, task_id):
         task.completed_on = None
         if task.completed:
             task.completed_on = timezone.localdate()
-            notice_toggle_task(request,task)
+            task_completed.send_robust(sender = Todo, task_obj = task)
         task.save()
-        
-    
+         
     return redirect(request.META.get('HTTP_REFERER') or reverse('home'))
 
 
@@ -135,22 +104,11 @@ class SessionCreate(LRM,NotDemoUserMixin,AdminPermRequired,CreateView):
             self.object.members.add(self.request.user)
         return response
     
-    def activity_notice(self):
-        profile_link = reverse_lazy('profile', kwargs={'username':self.request.user.username})
-        user = f"<a href={profile_link}>{self.request.user}</a>"
-
-        session_link = reverse_lazy('session', kwargs={'session_id': self.object.id})
-
-        session = f"<a href={session_link}>{self.object.name}</a>"
-
-        # actual content
-        title = f"{user} created a new session"
-        content = f"<strong>{user}</strong> has created a new session: <em>{session}</em> 🎉"
-        Notice.objects.create(room=self.object.room, title=title, content=content, is_html=True)
-
     def get_success_url(self):
         session_id = self.object.id
-        self.activity_notice()
+        # fire signal
+        session_created.send_robust(sender=Session, session_obj = self.object)
+
         return reverse_lazy('session', kwargs = {'session_id': session_id})
     
 
@@ -204,20 +162,21 @@ class SessionView(LRM,MemberRequiredMixin,DetailView):
                 TrackTodo.objects.create(todo = todo_inst, day= self.today, hours = hours )  
             
         return HttpResponseRedirect(self.request.path) 
-                
-
             
-
+            
 
 def joinsession(request, session_id):
     if request.method != "POST":
         return HttpResponseNotAllowed(["POST"])
+    
+    
     session_obj = Session.objects.get(id=session_id)
-    join_session_logic(request, session_id=session_obj.id)
+    room_members = session_obj.room.members.all()
+    if request.user in room_members:
+        session_obj.join_session(request.user)
+    
     return redirect(reverse('session', kwargs={'session_id': session_obj.id}))
     
-    
-
     
 def start_session(request, session_id):
     if request.method != "POST":
@@ -253,7 +212,8 @@ def kick_from_room(request):
     if room and request.user == room.admin:
         if str(room.admin.id) != str(user_id):
             room.remove_member(user_id)
-            notice_kick_from_room_logic(request, room, user_id)
+            # fire signal
+            kicked_from_room.send_robust(sender=Room, room_obj=room, user_id =user_id)
             return JsonResponse({'success': True})
         else:
             return JsonResponse({'success': False, 'error': 'You must first transfer the ownership'})
@@ -275,10 +235,10 @@ def kick_from_session(request):
         session_id = request.POST.get('session_id')
         user_id = request.POST.get('user_id')
 
-    session = get_object_or_404(Session, id=session_id)
+    session = get_object_or_404(Session, id=session_id, finish_date = None)
     if session and session.room.admin == request.user:
         session.remove_member(user_id)
-        notice_kick_from_session_logic(request,session, user_id)
+        kicked_from_session.send_robust(sender=Session, session_obj =session, user_id =user_id)
         return JsonResponse({'success': True})
 
 
@@ -297,7 +257,7 @@ def leave_session(request):
     session = get_object_or_404(Session, id=session_id)
     if session and request.user in session.members.all():
         session.remove_member(request.user.id)
-        notice_leave_session_logic(request,session)
+        left_session.send_robust(sender=Session,session_obj = session, user = request.user)
         return JsonResponse({'success': True})
     
 
@@ -311,7 +271,7 @@ def leave_room(request):
 
     if room.admin != request.user:
         room.remove_member(request.user.id)
-        notice_leave_room_logic(request, room)
+        left_room.send_robust(sender = Room, room_obj = room, user = request.user)
         return redirect('home')
 
 
@@ -328,7 +288,7 @@ def transfer_ownership(request):
     room = Room.objects.filter(id=room_id).first()
     if room and room.admin == request.user:
         room.transfer_admin(user_id)
-        notice_transfer_ownership_logic(request,room, user_id)
+        owner_transferred.send_robust(sender=Room,room_obj =room, user_id = user_id)
         return redirect('room', room.id)
 
 
@@ -343,8 +303,3 @@ def delete_room(request):
         name = room.name
         room.delete()
         return redirect('home')
-
-
-
-
-        

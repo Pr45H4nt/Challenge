@@ -3,7 +3,7 @@ from stats.models import Notice
 from .models import Session, CustomUser
 from django.utils import timezone
 from django.shortcuts import get_object_or_404 , redirect, HttpResponse, render
-
+from .register_signals import *
 
 
 def join_session_logic(request, session_id):
@@ -31,57 +31,15 @@ def join_session_logic(request, session_id):
 
 def start_session_logic(request, session_id):
     session = Session.objects.get(id=session_id)
-
-    def activity_notice(session_obj):
-        profile_link = reverse_lazy('profile', kwargs={'username':request.user.username})
-        user = f"<a href={profile_link}>{request.user}</a>"
-
-        session_link = reverse_lazy('session', kwargs={'session_id': session_obj.id})
-
-        session = f"<a href={session_link}>{session_obj.name}</a>"
-
-        # actual content
-        title = f"{user} started the session"
-        content = f"<strong>{user}</strong> has started the session <em>{session}</em>. Let’s get going! 🚀"
-        Notice.objects.create(room=session_obj.room, title=title, content=content, is_html=True)
-
     if session.room.admin == request.user:
         session.start_date = timezone.now()
         session.save()
-        activity_notice(session)
+        # fire signal
+        session_started.send_robust(sender=Session, session_obj = session)
+
 
 
 def end_session_logic(request, session_id):
-    def activity_notice(session_obj):
-        profile_link = reverse_lazy('profile', kwargs={'username':request.user.username})
-        user = f"<a href={profile_link}>{request.user}</a>"
-
-        session_link = reverse_lazy('session', kwargs={'session_id': session_obj.id})
-
-        session = f"<a href={session_link}>{session_obj.name}</a>"
-
-        # actual content
-        title = f"{user} ended the session"
-
-        session_rankings = "<h4>📊 Session Rankings</h4><ul>"
-        for item in session_obj.rankings.all():
-            session_rankings += f"<li>{item.rank}. <strong>{item.user}</strong> — {item.total_hours} hours</li>"
-        session_rankings += "</ul>"
-
-        room_rankings = "<h4>🌐 Room Rankings</h4><ul>"
-        for item in session_obj.room.rankings.all():
-            room_rankings += f"<li>{item.rank}. <strong>{item.user}</strong> — {item.total_hours} hours</li>"
-        room_rankings += "</ul>"
-
-        content = f"""
-        <strong>{user}</strong> has ended the session <em>{session}</em>. Congratulations to everyone!
-        {session_rankings}
-        {room_rankings}
-        """
-
-        Notice.objects.create(room=session_obj.room, title=title, content=content, is_html=True)
-
-    
     session = Session.objects.get(id=session_id)
     if session.start_date:
         if session.room.admin == request.user:
@@ -93,7 +51,8 @@ def end_session_logic(request, session_id):
                     task.save()
             session.save()
             session.room.updateRoomRankings()
-            activity_notice(session)
+            # fire signal
+            session_ended.send_robust(sender=Session, session_obj = session)
 
 
 def notice_kick_from_room_logic(request, room_obj, user_id):

@@ -1,0 +1,1158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Session Management | Intuitive Interface</title>
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <style>
+        :root {
+            --primary: #6366f1;
+            --primary-dark: #4f46e5;
+            --primary-light: #818cf8;
+            --secondary: #8b5cf6;
+            --success: #10b981;
+            --warning: #f59e0b;
+            --danger: #ef4444;
+            --dark: #1e293b;
+            --darker: #0f172a;
+            --light: #f1f5f9;
+            --gray: #94a3b8;
+            --card-bg: rgba(255, 255, 255, 0.05);
+            --card-border: rgba(255, 255, 255, 0.1);
+            
+            --spacing-xs: 0.5rem;
+            --spacing-sm: 1rem;
+            --spacing-md: 1.5rem;
+            --spacing-lg: 2rem;
+            --spacing-xl: 3rem;
+            
+            --radius-sm: 6px;
+            --radius-md: 10px;
+            --radius-lg: 16px;
+            
+            --shadow-sm: 0 2px 4px rgba(0, 0, 0, 0.1);
+            --shadow-md: 0 4px 12px rgba(0, 0, 0, 0.15);
+            --shadow-lg: 0 8px 25px rgba(0, 0, 0, 0.2);
+            --glow-primary: 0 0 15px rgba(99, 102, 241, 0.4);
+            
+            --transition: all 0.3s ease;
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', system-ui, -apple-system, sans-serif;
+            background: linear-gradient(135deg, var(--darker) 0%, #1a1a2e 100%);
+            color: var(--light);
+            line-height: 1.6;
+            min-height: 100vh;
+            padding: 0;
+            overflow-x: hidden;
+        }
+        
+        /* Layout */
+        .app-container {
+            display: grid;
+            grid-template-columns: 280px 1fr;
+            min-height: 100vh;
+        }
+        
+        /* Sidebar */
+        .sidebar {
+            background: rgba(15, 23, 42, 0.9);
+            border-right: 1px solid rgba(255, 255, 255, 0.05);
+            padding: var(--spacing-md);
+            position: sticky;
+            top: 0;
+            height: 100vh;
+            overflow-y: auto;
+            backdrop-filter: blur(10px);
+        }
+        
+        .logo {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            margin-bottom: var(--spacing-xl);
+            padding: var(--spacing-sm);
+            background: rgba(79, 70, 229, 0.15);
+            border-radius: var(--radius-md);
+        }
+        
+        .logo-icon {
+            width: 36px;
+            height: 36px;
+            background: var(--primary);
+            border-radius: 10px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: 1.2rem;
+        }
+        
+        .logo-text {
+            font-size: 1.4rem;
+            font-weight: 700;
+            background: linear-gradient(to right, var(--primary-light), var(--secondary));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .nav-section {
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .nav-title {
+            font-size: 0.8rem;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            color: var(--gray);
+            margin-bottom: var(--spacing-sm);
+            padding-left: var(--spacing-sm);
+        }
+        
+        .nav-link {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            color: var(--light);
+            text-decoration: none;
+            margin-bottom: var(--spacing-xs);
+            transition: var(--transition);
+        }
+        
+        .nav-link:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .nav-link.active {
+            background: rgba(79, 70, 229, 0.2);
+            color: var(--primary-light);
+            box-shadow: var(--glow-primary);
+        }
+        
+        .nav-link i {
+            width: 24px;
+            text-align: center;
+        }
+        
+        /* Main Content */
+        .main-content {
+            padding: var(--spacing-lg);
+            overflow-y: auto;
+            max-width: 1400px;
+            margin: 0 auto;
+            width: 100%;
+        }
+        
+        /* Header */
+        .page-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .breadcrumb {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .breadcrumb a {
+            color: var(--primary-light);
+            text-decoration: none;
+            transition: var(--transition);
+        }
+        
+        .breadcrumb a:hover {
+            color: white;
+            text-decoration: underline;
+        }
+        
+        .breadcrumb .divider {
+            opacity: 0.5;
+            margin: 0 4px;
+        }
+        
+        .header-title {
+            font-size: 2rem;
+            font-weight: 700;
+            margin: var(--spacing-xs) 0 var(--spacing-sm);
+            background: linear-gradient(to right, #ffffff, var(--primary-light));
+            -webkit-background-clip: text;
+            background-clip: text;
+            color: transparent;
+        }
+        
+        .header-description {
+            color: var(--gray);
+            max-width: 700px;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .header-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+        }
+        
+        .btn {
+            display: inline-flex;
+            align-items: center;
+            gap: var(--spacing-xs);
+            padding: 0.7rem 1.3rem;
+            border-radius: var(--radius-md);
+            font-weight: 500;
+            cursor: pointer;
+            transition: var(--transition);
+            border: none;
+            font-size: 0.95rem;
+        }
+        
+        .btn i {
+            font-size: 0.9rem;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(to right, var(--primary), var(--primary-dark));
+            color: white;
+            box-shadow: var(--glow-primary);
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 5px 20px rgba(99, 102, 241, 0.5);
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1);
+            color: white;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .btn-secondary:hover {
+            background: rgba(255, 255, 255, 0.15);
+            border-color: rgba(255, 255, 255, 0.2);
+        }
+        
+        /* Stats Cards */
+        .stats-container {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(240px, 1fr));
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-lg);
+        }
+        
+        .stat-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            backdrop-filter: blur(10px);
+            transition: var(--transition);
+        }
+        
+        .stat-card:hover {
+            transform: translateY(-5px);
+            box-shadow: var(--shadow-lg);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        
+        .stat-icon {
+            width: 50px;
+            height: 50px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin-bottom: var(--spacing-sm);
+            font-size: 1.5rem;
+        }
+        
+        .stat-icon.primary {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+        }
+        
+        .stat-icon.success {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+        
+        .stat-icon.warning {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        .stat-value {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: var(--spacing-xs);
+            color: white;
+        }
+        
+        .stat-label {
+            color: var(--gray);
+            font-size: 0.9rem;
+        }
+        
+        /* Main Content Grid */
+        .content-grid {
+            display: grid;
+            grid-template-columns: 1fr 350px;
+            gap: var(--spacing-md);
+        }
+        
+        /* Tasks Section */
+        .tasks-section {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            backdrop-filter: blur(10px);
+        }
+        
+        .section-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .section-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+        }
+        
+        .task-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+        }
+        
+        .task-item {
+            background: rgba(15, 23, 42, 0.4);
+            border-radius: var(--radius-sm);
+            padding: var(--spacing-md);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+            transition: var(--transition);
+        }
+        
+        .task-item:hover {
+            background: rgba(15, 23, 42, 0.6);
+            border-color: rgba(99, 102, 241, 0.3);
+        }
+        
+        .task-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .task-title {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .task-status {
+            padding: 0.3rem 0.7rem;
+            border-radius: 20px;
+            font-size: 0.8rem;
+            font-weight: 500;
+        }
+        
+        .status-active {
+            background: rgba(16, 185, 129, 0.15);
+            color: var(--success);
+        }
+        
+        .status-pending {
+            background: rgba(245, 158, 11, 0.15);
+            color: var(--warning);
+        }
+        
+        .status-completed {
+            background: rgba(99, 102, 241, 0.15);
+            color: var(--primary-light);
+        }
+        
+        .task-meta {
+            display: flex;
+            gap: var(--spacing-md);
+            margin-bottom: var(--spacing-md);
+        }
+        
+        .task-meta-item {
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .meta-label {
+            font-size: 0.8rem;
+            color: var(--gray);
+            margin-bottom: 4px;
+        }
+        
+        .meta-value {
+            font-weight: 600;
+            font-size: 1.1rem;
+        }
+        
+        .task-progress {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .progress-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+        }
+        
+        .progress-bar {
+            height: 8px;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 4px;
+            overflow: hidden;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            border-radius: 4px;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            width: 65%;
+        }
+        
+        .task-actions {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+        
+        .action-btn {
+            flex: 1;
+            text-align: center;
+            padding: 0.6rem;
+            border-radius: var(--radius-sm);
+            background: rgba(255, 255, 255, 0.05);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+            color: white;
+            font-size: 0.9rem;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+        }
+        
+        .action-btn:hover {
+            background: rgba(99, 102, 241, 0.15);
+            border-color: var(--primary);
+        }
+        
+        .action-btn i {
+            font-size: 0.9rem;
+        }
+        
+        /* Time Input */
+        .time-input-container {
+            display: flex;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+        
+        .time-input-group {
+            flex: 1;
+        }
+        
+        .time-input-group label {
+            display: block;
+            margin-bottom: 6px;
+            font-size: 0.9rem;
+            color: var(--gray);
+        }
+        
+        .time-input {
+            width: 100%;
+            padding: 0.8rem;
+            background: rgba(15, 23, 42, 0.4);
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            border-radius: var(--radius-sm);
+            color: white;
+            font-size: 1rem;
+        }
+        
+        .time-input:focus {
+            outline: none;
+            border-color: var(--primary);
+            box-shadow: 0 0 0 3px rgba(99, 102, 241, 0.2);
+        }
+        
+        /* Right Panel */
+        .right-panel {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-md);
+        }
+        
+        /* Members Card */
+        .members-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            backdrop-filter: blur(10px);
+        }
+        
+        .members-list {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-sm);
+        }
+        
+        .member-item {
+            display: flex;
+            align-items: center;
+            gap: var(--spacing-sm);
+            padding: var(--spacing-sm);
+            border-radius: var(--radius-sm);
+            transition: var(--transition);
+        }
+        
+        .member-item:hover {
+            background: rgba(255, 255, 255, 0.05);
+        }
+        
+        .member-avatar {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            background: linear-gradient(to right, var(--primary), var(--secondary));
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: 600;
+            color: white;
+        }
+        
+        .member-info {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: 500;
+            margin-bottom: 2px;
+        }
+        
+        .member-status {
+            display: flex;
+            align-items: center;
+            gap: 4px;
+            font-size: 0.8rem;
+            color: var(--gray);
+        }
+        
+        .status-indicator {
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+        }
+        
+        .status-active {
+            background: var(--success);
+        }
+        
+        .status-inactive {
+            background: var(--gray);
+        }
+        
+        .member-hours {
+            font-weight: 600;
+            color: var(--primary-light);
+        }
+        
+        /* Progress Card */
+        .progress-card {
+            background: var(--card-bg);
+            border: 1px solid var(--card-border);
+            border-radius: var(--radius-md);
+            padding: var(--spacing-md);
+            backdrop-filter: blur(10px);
+        }
+        
+        .progress-bars {
+            display: flex;
+            flex-direction: column;
+            gap: var(--spacing-sm);
+            margin-top: var(--spacing-md);
+        }
+        
+        .progress-item {
+            margin-bottom: var(--spacing-sm);
+        }
+        
+        .progress-item-header {
+            display: flex;
+            justify-content: space-between;
+            margin-bottom: 6px;
+        }
+        
+        /* Responsive Design */
+        @media (max-width: 1200px) {
+            .content-grid {
+                grid-template-columns: 1fr;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .app-container {
+                grid-template-columns: 1fr;
+            }
+            
+            .sidebar {
+                display: none;
+            }
+            
+            .header-actions {
+                flex-wrap: wrap;
+            }
+            
+            .page-header {
+                flex-direction: column;
+                gap: var(--spacing-md);
+            }
+        }
+        
+        /* Animations */
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+        
+        .fade-in {
+            animation: fadeIn 0.5s ease forwards;
+        }
+        
+        .delay-1 { animation-delay: 0.1s; }
+        .delay-2 { animation-delay: 0.2s; }
+        .delay-3 { animation-delay: 0.3s; }
+        .delay-4 { animation-delay: 0.4s; }
+    </style>
+</head>
+<body>
+    <div class="app-container">
+        <!-- Sidebar -->
+        <aside class="sidebar">
+            <div class="logo">
+                <div class="logo-icon">
+                    <i class="fas fa-tasks"></i>
+                </div>
+                <div class="logo-text">ProdTrack</div>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Navigation</div>
+                <a href="#" class="nav-link active">
+                    <i class="fas fa-home"></i>
+                    <span>Dashboard</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-calendar"></i>
+                    <span>Sessions</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-tasks"></i>
+                    <span>My Tasks</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-chart-line"></i>
+                    <span>Analytics</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Current Session</div>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    <span>Session Settings</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-users"></i>
+                    <span>Members</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-trophy"></i>
+                    <span>Leaderboard</span>
+                </a>
+            </div>
+            
+            <div class="nav-section">
+                <div class="nav-title">Account</div>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-user"></i>
+                    <span>Profile</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-cog"></i>
+                    <span>Settings</span>
+                </a>
+                <a href="#" class="nav-link">
+                    <i class="fas fa-sign-out-alt"></i>
+                    <span>Logout</span>
+                </a>
+            </div>
+        </aside>
+        
+        <!-- Main Content -->
+        <main class="main-content">
+            <!-- Page Header -->
+            <div class="page-header fade-in">
+                <div>
+                    <div class="breadcrumb">
+                        <a href="#">Rooms</a>
+                        <span class="divider">/</span>
+                        <a href="#">Design Team</a>
+                        <span class="divider">/</span>
+                        <span>Current Session</span>
+                    </div>
+                    <h1 class="header-title">Q3 Design Sprint</h1>
+                    <p class="header-description">
+                        Complete all design tasks for the new product launch by the end of the quarter. 
+                        Collaborate with the team and track your progress.
+                    </p>
+                </div>
+                <div class="header-actions">
+                    <button class="btn btn-primary">
+                        <i class="fas fa-plus"></i>
+                        Create Task
+                    </button>
+                    <button class="btn btn-secondary">
+                        <i class="fas fa-cog"></i>
+                    </button>
+                </div>
+            </div>
+            
+            <!-- Stats Cards -->
+            <div class="stats-container">
+                <div class="stat-card fade-in delay-1">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-clock"></i>
+                    </div>
+                    <div class="stat-value">24.5h</div>
+                    <div class="stat-label">Total Time Logged</div>
+                </div>
+                
+                <div class="stat-card fade-in delay-2">
+                    <div class="stat-icon success">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                    <div class="stat-value">8/12</div>
+                    <div class="stat-label">Tasks Completed</div>
+                </div>
+                
+                <div class="stat-card fade-in delay-3">
+                    <div class="stat-icon warning">
+                        <i class="fas fa-users"></i>
+                    </div>
+                    <div class="stat-value">6</div>
+                    <div class="stat-label">Active Members</div>
+                </div>
+                
+                <div class="stat-card fade-in delay-4">
+                    <div class="stat-icon primary">
+                        <i class="fas fa-calendar"></i>
+                    </div>
+                    <div class="stat-value">14 days</div>
+                    <div class="stat-label">Remaining Time</div>
+                </div>
+            </div>
+            
+            <!-- Main Content Grid -->
+            <div class="content-grid">
+                <!-- Left Column -->
+                <div class="tasks-section fade-in">
+                    <div class="section-header">
+                        <h2 class="section-title">
+                            <i class="fas fa-tasks"></i>
+                            My Tasks
+                        </h2>
+                        <div class="filter">
+                            <select class="time-input">
+                                <option>All Tasks</option>
+                                <option>Active</option>
+                                <option>Completed</option>
+                            </select>
+                        </div>
+                    </div>
+                    
+                    <div class="task-list">
+                        <!-- Task Item 1 -->
+                        <div class="task-item">
+                            <div class="task-header">
+                                <h3 class="task-title">Create landing page design</h3>
+                                <div class="task-status status-active">Active</div>
+                            </div>
+                            
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Today</div>
+                                    <div class="meta-value">3.5h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Total</div>
+                                    <div class="meta-value">12.5h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Estimate</div>
+                                    <div class="meta-value">15h</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <div>Progress</div>
+                                    <div>83%</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 83%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-actions">
+                                <button class="action-btn">
+                                    <i class="fas fa-plus"></i>
+                                    Add Time
+                                </button>
+                                <button class="action-btn">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button class="action-btn">
+                                    <i class="fas fa-check"></i>
+                                    Complete
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Task Item 2 -->
+                        <div class="task-item">
+                            <div class="task-header">
+                                <h3 class="task-title">Design mobile app icons</h3>
+                                <div class="task-status status-pending">Pending</div>
+                            </div>
+                            
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Today</div>
+                                    <div class="meta-value">0h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Total</div>
+                                    <div class="meta-value">0h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Estimate</div>
+                                    <div class="meta-value">8h</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <div>Progress</div>
+                                    <div>0%</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 0%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-actions">
+                                <button class="action-btn">
+                                    <i class="fas fa-plus"></i>
+                                    Add Time
+                                </button>
+                                <button class="action-btn">
+                                    <i class="fas fa-edit"></i>
+                                    Edit
+                                </button>
+                                <button class="action-btn">
+                                    <i class="fas fa-check"></i>
+                                    Complete
+                                </button>
+                            </div>
+                        </div>
+                        
+                        <!-- Task Item 3 -->
+                        <div class="task-item">
+                            <div class="task-header">
+                                <h3 class="task-title">User profile page redesign</h3>
+                                <div class="task-status status-completed">Completed</div>
+                            </div>
+                            
+                            <div class="task-meta">
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Today</div>
+                                    <div class="meta-value">0h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Total</div>
+                                    <div class="meta-value">9h</div>
+                                </div>
+                                <div class="task-meta-item">
+                                    <div class="meta-label">Estimate</div>
+                                    <div class="meta-value">8h</div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-progress">
+                                <div class="progress-header">
+                                    <div>Progress</div>
+                                    <div>100%</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 100%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="task-actions">
+                                <button class="action-btn">
+                                    <i class="fas fa-redo"></i>
+                                    Reopen
+                                </button>
+                                <button class="action-btn">
+                                    <i class="fas fa-chart-bar"></i>
+                                    View Stats
+                                </button>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Time Input -->
+                    <div class="time-input-container">
+                        <div class="time-input-group">
+                            <label>Add Time to Task</label>
+                            <input type="text" class="time-input" placeholder="e.g. 2h 30m">
+                        </div>
+                        <div class="time-input-group">
+                            <label>&nbsp;</label>
+                            <button class="btn btn-primary" style="height: 46px; margin-top: 22px">
+                                <i class="fas fa-plus"></i> Add
+                            </button>
+                        </div>
+                    </div>
+                </div>
+                
+                <!-- Right Column -->
+                <div class="right-panel">
+                    <!-- Members Card -->
+                    <div class="members-card fade-in">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-users"></i>
+                                Session Members
+                            </h2>
+                            <div class="btn btn-secondary">
+                                <i class="fas fa-plus"></i>
+                            </div>
+                        </div>
+                        
+                        <div class="members-list">
+                            <div class="member-item">
+                                <div class="member-avatar">JD</div>
+                                <div class="member-info">
+                                    <div class="member-name">John Doe</div>
+                                    <div class="member-status">
+                                        <div class="status-indicator status-active"></div>
+                                        <span>Active now</span>
+                                    </div>
+                                </div>
+                                <div class="member-hours">6.2h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar">AS</div>
+                                <div class="member-info">
+                                    <div class="member-name">Alex Smith</div>
+                                    <div class="member-status">
+                                        <div class="status-indicator status-active"></div>
+                                        <span>Active now</span>
+                                    </div>
+                                </div>
+                                <div class="member-hours">5.8h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar">MJ</div>
+                                <div class="member-info">
+                                    <div class="member-name">Maria Johnson</div>
+                                    <div class="member-status">
+                                        <div class="status-indicator status-inactive"></div>
+                                        <span>Inactive</span>
+                                    </div>
+                                </div>
+                                <div class="member-hours">4.5h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar">RS</div>
+                                <div class="member-info">
+                                    <div class="member-name">Robert Smith</div>
+                                    <div class="member-status">
+                                        <div class="status-indicator status-inactive"></div>
+                                        <span>Inactive</span>
+                                    </div>
+                                </div>
+                                <div class="member-hours">3.2h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar">ED</div>
+                                <div class="member-info">
+                                    <div class="member-name">Emily Davis</div>
+                                    <div class="member-status">
+                                        <div class="status-indicator status-active"></div>
+                                        <span>Active now</span>
+                                    </div>
+                                </div>
+                                <div class="member-hours">5.0h</div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Progress Card -->
+                    <div class="progress-card fade-in">
+                        <div class="section-header">
+                            <h2 class="section-title">
+                                <i class="fas fa-chart-line"></i>
+                                Session Progress
+                            </h2>
+                        </div>
+                        
+                        <div class="progress-bars">
+                            <div class="progress-item">
+                                <div class="progress-item-header">
+                                    <div>Team Progress</div>
+                                    <div>68%</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 68%"></div>
+                                </div>
+                            </div>
+                            
+                            <div class="progress-item">
+                                <div class="progress-item-header">
+                                    <div>Your Progress</div>
+                                    <div>83%</div>
+                                </div>
+                                <div class="progress-bar">
+                                    <div class="progress-fill" style="width: 83%"></div>
+                                </div>
+                            </div>
+                        </div>
+                        
+                        <div class="section-header" style="margin-top: var(--spacing-md);">
+                            <h2 class="section-title">
+                                <i class="fas fa-trophy"></i>
+                                Leaderboard
+                            </h2>
+                        </div>
+                        
+                        <div class="members-list">
+                            <div class="member-item">
+                                <div class="member-avatar" style="background: linear-gradient(to right, #f59e0b, #f97316);">1</div>
+                                <div class="member-info">
+                                    <div class="member-name">John Doe</div>
+                                </div>
+                                <div class="member-hours">24.5h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar" style="background: linear-gradient(to right, #94a3b8, #64748b);">2</div>
+                                <div class="member-info">
+                                    <div class="member-name">Alex Smith</div>
+                                </div>
+                                <div class="member-hours">22.1h</div>
+                            </div>
+                            
+                            <div class="member-item">
+                                <div class="member-avatar" style="background: linear-gradient(to right, #a855f7, #7e22ce);">3</div>
+                                <div class="member-info">
+                                    <div class="member-name">Emily Davis</div>
+                                </div>
+                                <div class="member-hours">19.8h</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+    
+    <script>
+        // Add animations to elements when they come into view
+        document.addEventListener('DOMContentLoaded', function() {
+            // Simple fade-in animation for all elements with the fade-in class
+            const fadeElements = document.querySelectorAll('.fade-in');
+            
+            fadeElements.forEach(el => {
+                el.style.opacity = '0';
+                setTimeout(() => {
+                    el.style.opacity = '1';
+                    el.style.transform = 'translateY(0)';
+                }, 100);
+            });
+            
+            // Add hover effects to cards
+            const cards = document.querySelectorAll('.stat-card, .task-item, .members-card, .progress-card');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', () => {
+                    card.style.transform = 'translateY(-5px)';
+                    card.style.boxShadow = '0 10px 25px rgba(0, 0, 0, 0.3)';
+                });
+                
+                card.addEventListener('mouseleave', () => {
+                    card.style.transform = 'translateY(0)';
+                    card.style.boxShadow = '0 4px 12px rgba(0, 0, 0, 0.15)';
+                });
+            });
+            
+            // Button ripple effect
+            const buttons = document.querySelectorAll('.btn');
+            buttons.forEach(button => {
+                button.addEventListener('click', function(e) {
+                    const x = e.clientX - e.target.getBoundingClientRect().left;
+                    const y = e.clientY - e.target.getBoundingClientRect().top;
+                    
+                    const ripple = document.createElement('span');
+                    ripple.classList.add('ripple');
+                    ripple.style.left = `${x}px`;
+                    ripple.style.top = `${y}px`;
+                    
+                    this.appendChild(ripple);
+                    
+                    setTimeout(() => {
+                        ripple.remove();
+                    }, 600);
+                });
+            });
+        });
+    </script>
+</body>
+</html>

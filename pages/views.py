@@ -12,8 +12,6 @@ from django.contrib import messages
 from django.shortcuts import render, get_object_or_404, redirect
 
 
-# Create your views here.
-
 class Homeview(TemplateView):
     template_name = "home.html"
 
@@ -36,30 +34,14 @@ class RoomJoinView(LoginRequiredMixin, NotDemoUserMixin,FormView):
     template_name = 'room/joinroom.html'
     form_class = RoomJoinForm
 
-    def activity_notice(self):
-        profile_link = reverse_lazy('profile', kwargs={'username':self.request.user.username})
-        user = f"<a href={profile_link}>{self.request.user}</a>"
-
-        room_link = reverse_lazy('room', kwargs={'room_id': self.room.id})
-
-        room = f"<a href={room_link}>{self.room.name}</a>"
-
-        # actual content
-        title = f"{user} has joined the room"
-        content = f"<strong>{user}</strong> just joined <em>{room}</em>. Welcome aboard!"
-        Notice.objects.create(room=self.room, title=title, content=content, is_html=True)
-
-
     def form_valid(self, form):
         room = form.cleaned_data['room']
         self.room = room
-        room.members.add(self.request.user)
-        room.save()
+        room.join_room(self.request.user)
         return super().form_valid(form)
     
     def get_success_url(self):
         room = self.room
-        self.activity_notice()
         return reverse_lazy('room', kwargs = {'room_id': room.id})
     
 

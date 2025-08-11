@@ -4,6 +4,10 @@ from django.contrib.auth.hashers import make_password , check_password, is_passw
 from django.core.exceptions import ValidationError
 import uuid
 from django.utils import timezone
+from .register_signals import *
+
+import logging
+logger = logging.getLogger(__name__)
 
 # Create your models here.
 
@@ -37,7 +41,7 @@ class Room(models.Model):
         if self.password:
             return check_password(given_pass, self.password )
         return True
-
+    
     @property
     def total_hours(self):
         hashmap = {}
@@ -71,6 +75,9 @@ class Room(models.Model):
         if user and user in self.members.all():
             self.admin = user
             self.save()
+        session = self.sessions.filter(finish_date = None).first()
+        if session:
+            session.members.add(user)
 
     def remove_member(self, user_id):
         if self.admin.id == user_id:
@@ -85,7 +92,16 @@ class Room(models.Model):
         rank = RoomRanking.objects.filter(room = self, user__id = user_id).first()
         if rank:
             rank.delete()
+    
+    # used in views and apis
+    def join_room(self, user):
+        self.members.add(user)
 
+        # fire signal (room joined)
+        responses = room_joined.send_robust(sender=Room, user=user, room=self)
+        for receiver, response in responses:
+            if isinstance(response, Exception):
+                logger.error(f"Signal error in {receiver}: {response}", exc_info=True)
 
 
     def __str__(self):
@@ -181,7 +197,17 @@ class Session(models.Model):
             rank.delete()
         self.save()
         self.updateSessionRanking()
-    
+
+    # used in views and apis
+    def join_session(self, user):
+        self.members.add(user)
+
+        # fire signal (room joined)
+        responses = session_joined.send_robust(sender=Session, user=user, session=self)
+        for receiver, response in responses:
+            if isinstance(response, Exception):
+                logger.error(f"Signal error in {receiver}: {response}", exc_info=True)
+                
     
 
 class Todo(models.Model):
