@@ -107,8 +107,8 @@ class RoomSerializer(serializers.ModelSerializer):
 
 class SessionSerializer(serializers.ModelSerializer):
     members = serializers.SerializerMethodField()
-    start_date = serializers.ReadOnlyField()
-    finish_date = serializers.ReadOnlyField()
+    started_at = serializers.ReadOnlyField()
+    finished_at = serializers.ReadOnlyField()
     room = serializers.PrimaryKeyRelatedField(queryset=Room.objects.all())
     is_active = serializers.ReadOnlyField()
 

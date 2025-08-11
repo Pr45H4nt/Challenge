@@ -130,7 +130,7 @@ class TestSessionModel(TestCase):
             'room' : self.room1,
             'name' : 'testsession',
             'description' : 'test description',
-            'start_date' : timezone.now(),
+            'started_at' : timezone.now(),
 
         }
         
@@ -145,12 +145,12 @@ class TestSessionModel(TestCase):
         self.assertTrue(session1.is_active)
 
         with self.assertRaises(ValidationError) as context:
-            session1.finish_date = session1.start_date - timezone.timedelta(days=3)
+            session1.finished_at = session1.started_at - timezone.timedelta(days=3)
             session1.save()
 
         
-        data1['start_date'] = timezone.now() - timezone.timedelta(days=5)
-        data1['finish_date'] = timezone.now() - timezone.timedelta(days=3)
+        data1['started_at'] = timezone.now() - timezone.timedelta(days=5)
+        data1['finished_at'] = timezone.now() - timezone.timedelta(days=3)
 
         # session name should be unique
         with self.assertRaises(ValidationError) as context:
@@ -162,7 +162,7 @@ class TestSessionModel(TestCase):
 
         # There cannot be two active sessions
         data1['name'] = 'a unique name'
-        del data1['finish_date']
+        del data1['finished_at']
         # session name should be unique
         with self.assertRaises(ValidationError) as context:
             session2 = Session.objects.create(
@@ -172,7 +172,7 @@ class TestSessionModel(TestCase):
         
 
         # simulate one session ending and one creating
-        session1.finish_date = timezone.now()
+        session1.finished_at = timezone.now()
         session1.save()
         
         session2 = Session.objects.create(
@@ -202,7 +202,7 @@ class TodoTest(TestCase):
             'room' : room,
             'name' : 'testsession',
             'description' : 'test description',
-            'start_date' : timezone.now(),
+            'started_at' : timezone.now(),
 
         }
         
@@ -296,7 +296,7 @@ class IntegratedTestFlow(TestCase):
         )
 
         # start the session
-        session.start_date = timezone.now()
+        session.started_at = timezone.now()
         session.save()
 
         # members added to the room
@@ -387,7 +387,7 @@ class IntegratedTestFlow(TestCase):
 
 
         # session ended
-        session.finish_date = timezone.now()
+        session.finished_at = timezone.now()
         session.save()
 
 
@@ -415,7 +415,7 @@ class IntegratedTestFlow(TestCase):
         )
 
         # start the session
-        session.start_date = timezone.now()
+        session.started_at = timezone.now()
         session.save()
 
         # members added to the session
@@ -501,7 +501,7 @@ class IntegratedTestFlow(TestCase):
         self.assertEqual(u2_ranking.rank, 1 )
 
         # end session
-        session.finish_date = timezone.now()
+        session.finished_at = timezone.now()
         session.save()
 
         # check room rankings 

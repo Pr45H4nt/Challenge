@@ -195,7 +195,7 @@
                         <div class="session-name">{{ session.name }}</div>
                         <div class="session-meta">
                             Room: {{ session.room.name }} • 
-                            Started: {{ session.start_date|date:"M d, Y" }}
+                            Started: {{ session.started_at|date:"M d, Y" }}
                         </div>
                     </div>
                     <div class="session-status status-active">Active</div>
@@ -225,7 +225,7 @@
                         <div class="session-name">{{ session.name }}</div>
                         <div class="session-meta">
                             Room: {{ session.room.name }} • 
-                            Ended: {{ session.finish_date|date:"M d, Y" }}
+                            Ended: {{ session.finished_at|date:"M d, Y" }}
                         </div>
                     </div>
                     <div class="session-status status-past">Completed</div>

@@ -259,14 +259,14 @@
     </span>
     
     <div class="session-dates">
-        {% if session_stats.start_date %}
+        {% if session_stats.started_at %}
         <div class="date-item">
-            <strong>Started:</strong> <span class="date-value">{{ session_stats.start_date|date:"M d, Y" }}</span>
+            <strong>Started:</strong> <span class="date-value">{{ session_stats.started_at|date:"M d, Y" }}</span>
         </div>
         {% endif %}
-        {% if session_stats.finish_date %}
+        {% if session_stats.finished_at %}
         <div class="date-item">
-            <strong>Finished:</strong> <span class="date-value">{{ session_stats.finish_date|date:"M d, Y" }}</span>
+            <strong>Finished:</strong> <span class="date-value">{{ session_stats.finished_at|date:"M d, Y" }}</span>
         </div>
         {% endif %}
         

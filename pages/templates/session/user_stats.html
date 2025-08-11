@@ -653,11 +653,11 @@ html {
                 <strong>Total Members:</strong> {{ user_session_stats.total_members }}
             </div>
             <div>
-                <strong>Start Date:</strong> {{ user_session_stats.start_date|date:"M d, Y" }}
+                <strong>Start Date:</strong> {{ user_session_stats.started_at|date:"M d, Y" }}
             </div>
-            {% if user_session_stats.finish_date %}
+            {% if user_session_stats.finished_at %}
             <div>
-                <strong>End Date:</strong> {{ user_session_stats.finish_date|date:"M d, Y" }}
+                <strong>End Date:</strong> {{ user_session_stats.finished_at|date:"M d, Y" }}
             </div>
             {% endif %}
         </div>

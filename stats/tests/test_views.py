@@ -210,7 +210,7 @@ class NoticeViewsTest(TestCase):
             'name' : 'testsession1',
             'description': 'test description',
             'room' : room or self.create_room(),
-            'start_date' : timezone.now()
+            'started_at' : timezone.now()
         }
         kwargs.update(session_data)
         session = Session.objects.create(**kwargs)

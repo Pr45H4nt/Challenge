@@ -56,8 +56,8 @@ class RoomView(LoginRequiredMixin,MemberRequiredMixin,DetailView):
     def get_context_data(self, **kwargs):
         context = super().get_context_data(**kwargs)
         room_id = self.kwargs.get('room_id')
-        context['active_sessions'] = Session.objects.filter(room_id=room_id, finish_date__isnull= True)
-        context['old_sessions'] = Session.objects.filter(room_id=room_id, finish_date__lte=date.today())
+        context['active_sessions'] = Session.objects.filter(room_id=room_id, finished_at__isnull= True)
+        context['old_sessions'] = Session.objects.filter(room_id=room_id, finished_at__lte=date.today())
 
         return context
     

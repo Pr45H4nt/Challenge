@@ -75,7 +75,7 @@ class Room(models.Model):
         if user and user in self.members.all():
             self.admin = user
             self.save()
-        session = self.sessions.filter(finish_date = None).first()
+        session = self.sessions.filter(finished_at = None).first()
         if session:
             session.members.add(user)
 
@@ -113,8 +113,8 @@ class Session(models.Model):
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='sessions')
     name = models.CharField(max_length=250)
     description = models.TextField(blank=True, null=True)
-    start_date = models.DateTimeField(null=True,blank=True)
-    finish_date = models.DateTimeField(null=True, blank=True)
+    started_at = models.DateTimeField(null=True,blank=True)
+    finished_at = models.DateTimeField(null=True, blank=True)
     members = models.ManyToManyField(CustomUser, related_name='sessions', blank=True)
     
     def clean(self):
@@ -122,8 +122,8 @@ class Session(models.Model):
             raise ValidationError({"name": "The name should be unique in a room!"})
         
 
-        if self.finish_date and self.finish_date < self.start_date:
-            raise ValidationError({'finish_date': "Finish date can't be behind the start date"})
+        if self.finished_at and self.finished_at < self.started_at:
+            raise ValidationError({'finished_at': "Finish date can't be behind the start date"})
         
         session_members = self.members.all()
         room_members = self.room.members.all()
@@ -155,9 +155,9 @@ class Session(models.Model):
     
     @property
     def is_active(self):
-        if not self.finish_date:
+        if not self.finished_at:
             return True
-        return self.finish_date > timezone.now()
+        return self.finished_at > timezone.now()
     
     @property
     def total_hours(self):

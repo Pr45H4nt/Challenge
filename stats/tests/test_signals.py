@@ -94,7 +94,7 @@ class TestSignals(TestCase):
         session = Session.objects.create(
             name = 'testsession',
             room = self.room,
-            start_date = timezone.now()
+            started_at = timezone.now()
         )
 
         url = reverse_lazy('endsession', kwargs = {'session_id': session.id})
@@ -150,7 +150,7 @@ class TestSignals(TestCase):
         session = Session.objects.create(
             name = 'testsession',
             room = self.room,
-            start_date = timezone.now()
+            started_at = timezone.now()
         )
 
         data = {
@@ -170,7 +170,7 @@ class TestSignals(TestCase):
         session = Session.objects.create(
             name = 'testsession',
             room = self.room,
-            start_date = timezone.now()
+            started_at = timezone.now()
         )
         session.members.add(self.user)
 
@@ -213,7 +213,7 @@ class TestSignals(TestCase):
         session = Session.objects.create(
             name = 'testsession',
             room = self.room,
-            start_date = timezone.now()
+            started_at = timezone.now()
         )
         session.members.add(self.user)
 
@@ -231,7 +231,7 @@ class TestSignals(TestCase):
         session = Session.objects.create(
             name = 'testsession',
             room = self.room,
-            start_date = timezone.now()
+            started_at = timezone.now()
         )
         session.members.add(self.user)
 

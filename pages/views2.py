@@ -235,7 +235,7 @@ def kick_from_session(request):
         session_id = request.POST.get('session_id')
         user_id = request.POST.get('user_id')
 
-    session = get_object_or_404(Session, id=session_id, finish_date = None)
+    session = get_object_or_404(Session, id=session_id, finished_at = None)
     if session and session.room.admin == request.user:
         session.remove_member(user_id)
         kicked_from_session.send_robust(sender=Session, session_obj =session, user_id =user_id)

@@ -431,8 +431,8 @@ class RoomAPITest(APITestCase):
             room = self.room
         )
         session1.members.add(self.user1)
-        session1.start_date = timezone.now()- timezone.timedelta(days=2)
-        session1.finish_date = timezone.now() # end the session to make another session
+        session1.started_at = timezone.now()- timezone.timedelta(days=2)
+        session1.finished_at = timezone.now() # end the session to make another session
         session1.save() # members = user, user1
 
         session2 = Session.objects.create(
@@ -529,8 +529,8 @@ class SessionAPITest(APITestCase):
 
     def test_create_session_as_admin(self):
         # End existing session
-        self.session.start_date = timezone.now() - timezone.timedelta(days=5)
-        self.session.finish_date = timezone.now()
+        self.session.started_at = timezone.now() - timezone.timedelta(days=5)
+        self.session.finished_at = timezone.now()
         self.session.save()
 
         url = reverse_lazy('session-list')

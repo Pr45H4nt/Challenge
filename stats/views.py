@@ -155,35 +155,35 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
         
         if not tracktodos.exists():
             # If no data, use session start/end dates or current date
-            start_date = session.start_date.date() if session.start_date else timezone.now().date()
-            end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
-            # Handle if start_date/finish_date are already date objects
-            if hasattr(session.start_date, 'date'):
-                start_date = session.start_date.date() if session.start_date else timezone.now().date()
+            started_at = session.started_at.date() if session.started_at else timezone.now().date()
+            end_date = session.finished_at.date() if session.finished_at else timezone.now().date()
+            # Handle if started_at/finished_at are already date objects
+            if hasattr(session.started_at, 'date'):
+                started_at = session.started_at.date() if session.started_at else timezone.now().date()
             else:
-                start_date = session.start_date if session.start_date else timezone.now().date()
+                started_at = session.started_at if session.started_at else timezone.now().date()
             
-            if hasattr(session.finish_date, 'date'):
-                end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
+            if hasattr(session.finished_at, 'date'):
+                end_date = session.finished_at.date() if session.finished_at else timezone.now().date()
             else:
-                end_date = session.finish_date if session.finish_date else timezone.now().date()
+                end_date = session.finished_at if session.finished_at else timezone.now().date()
             
-            return start_date, end_date
+            return started_at, end_date
         
         dates = tracktodos.values_list('day', flat=True)
-        start_date = min(dates)
+        started_at = min(dates)
         end_date = max(dates)
         
         # Optionally, you can extend to session boundaries if available
         # Convert datetime to date if necessary
-        session_start = session.start_date
-        session_end = session.finish_date
+        session_start = session.started_at
+        session_end = session.finished_at
         
         if session_start:
             if hasattr(session_start, 'date'):
                 session_start = session_start.date()
-            if session_start < start_date:
-                start_date = session_start
+            if session_start < started_at:
+                started_at = session_start
                 
         if session_end:
             if hasattr(session_end, 'date'):
@@ -191,12 +191,12 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
             if session_end > end_date:
                 end_date = session_end
             
-        return start_date, end_date
+        return started_at, end_date
 
-    def generate_date_range(self, start_date, end_date):
+    def generate_date_range(self, started_at, end_date):
         """Generate all dates between start and end date"""
         dates = []
-        current_date = start_date
+        current_date = started_at
         while current_date <= end_date:
             dates.append(current_date)
             current_date += timedelta(days=1)
@@ -217,8 +217,8 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
             'total_tasks': total_tasks,
             'status': 'Active' if session.is_active else 'Completed',
             'description': session.description or '',
-            'start_date': session.start_date,
-            'finish_date': session.finish_date
+            'started_at': session.started_at,
+            'finished_at': session.finished_at
         }
 
     def get_daily_total_hours_data(self, session):
@@ -226,8 +226,8 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
         tracktodos = TrackTodo.objects.filter(todo__session=session).order_by('day')
         
         # Get date range
-        start_date, end_date = self.get_date_range(session)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(started_at, end_date)
         
         # Build hours data
         hours_data = defaultdict(float)
@@ -254,8 +254,8 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
         tracktodos = TrackTodo.objects.filter(todo__session=session).order_by('day')
         
         # Get date range
-        start_date, end_date = self.get_date_range(session)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(started_at, end_date)
         
         # Build hours data
         hours_data = defaultdict(float)
@@ -349,8 +349,8 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
         tracktodos = TrackTodo.objects.filter(todo__session=session).select_related('todo__user')
         
         # Get date range
-        start_date, end_date = self.get_date_range(session)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(started_at, end_date)
         
         # Step 1: Gather daily hours per user
         user_day_hours = defaultdict(lambda: defaultdict(float))
@@ -389,8 +389,8 @@ class SessionStats(LoginRequiredMixin,MemberRequiredMixin,DetailView):
         tracktodos = TrackTodo.objects.filter(todo__session=session).select_related('todo__user')
         
         # Get date range
-        start_date, end_date = self.get_date_range(session)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_date_range(session)
+        all_dates = self.generate_date_range(started_at, end_date)
         
         # Step 1: Gather daily hours per user
         user_day_hours = defaultdict(lambda: defaultdict(float))
@@ -535,31 +535,31 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
         
         if not user_tracktodos.exists():
             # If no data, use session start/end dates or current date
-            if hasattr(session.start_date, 'date'):
-                start_date = session.start_date.date() if session.start_date else timezone.now().date()
+            if hasattr(session.started_at, 'date'):
+                started_at = session.started_at.date() if session.started_at else timezone.now().date()
             else:
-                start_date = session.start_date if session.start_date else timezone.now().date()
+                started_at = session.started_at if session.started_at else timezone.now().date()
             
-            if hasattr(session.finish_date, 'date'):
-                end_date = session.finish_date.date() if session.finish_date else timezone.now().date()
+            if hasattr(session.finished_at, 'date'):
+                end_date = session.finished_at.date() if session.finished_at else timezone.now().date()
             else:
-                end_date = session.finish_date if session.finish_date else timezone.now().date()
+                end_date = session.finished_at if session.finished_at else timezone.now().date()
             
-            return start_date, end_date
+            return started_at, end_date
         
         dates = user_tracktodos.values_list('day', flat=True)
-        start_date = min(dates)
+        started_at = min(dates)
         end_date = max(dates)
         
         # Extend to session boundaries if available
-        session_start = session.start_date
-        session_end = session.finish_date
+        session_start = session.started_at
+        session_end = session.finished_at
         
         if session_start:
             if hasattr(session_start, 'date'):
                 session_start = session_start.date()
-            if session_start < start_date:
-                start_date = session_start
+            if session_start < started_at:
+                started_at = session_start
                 
         if session_end:
             if hasattr(session_end, 'date'):
@@ -567,12 +567,12 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
             if session_end > end_date:
                 end_date = session_end
             
-        return start_date, end_date
+        return started_at, end_date
 
-    def generate_date_range(self, start_date, end_date):
+    def generate_date_range(self, started_at, end_date):
         """Generate all dates between start and end date"""
         dates = []
-        current_date = start_date
+        current_date = started_at
         while current_date <= end_date:
             dates.append(current_date)
             current_date += timedelta(days=1)
@@ -604,8 +604,8 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
             'user_rank': user_rank,
             'total_members': session.members.count(),
             'session_status': 'Active' if session.is_active else 'Completed',
-            'start_date': session.start_date,
-            'finish_date': session.finish_date
+            'started_at': session.started_at,
+            'finished_at': session.finished_at
         }
 
     def get_user_daily_hours_data(self, session, user):
@@ -616,8 +616,8 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
         ).order_by('day')
 
         # Get date range
-        start_date, end_date = self.get_user_date_range(session, user)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_user_date_range(session, user)
+        all_dates = self.generate_date_range(started_at, end_date)
 
         # Build hours data
         hours_data = defaultdict(float)
@@ -645,8 +645,8 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
         ).order_by('day')
 
         # Get date range
-        start_date, end_date = self.get_user_date_range(session, user)
-        all_dates = self.generate_date_range(start_date, end_date)
+        started_at, end_date = self.get_user_date_range(session, user)
+        all_dates = self.generate_date_range(started_at, end_date)
 
         # Build hours data
         hours_data = defaultdict(float)

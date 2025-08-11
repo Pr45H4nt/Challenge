@@ -88,7 +88,7 @@ class TestTodoView(TestCase):
             'name' : 'testsession1',
             'description': 'test description',
             'room' : room or self.create_room(),
-            'start_date' : timezone.now()
+            'started_at' : timezone.now()
         }
         kwargs.update(session_data)
         session = Session.objects.create(**kwargs)
@@ -251,7 +251,7 @@ class TestTodoView(TestCase):
         todo = self.create_todo(self.user1)
         url = self.toggle_task_url(todo.id)
         self.assertFalse(todo.completed)
-        todo.session.finish_date = timezone.now()
+        todo.session.finished_at = timezone.now()
         todo.session.save()
         todo.refresh_from_db()
 
@@ -271,7 +271,7 @@ class TestTodoView(TestCase):
         todo = self.create_todo(self.user1, completed= True, completed_on= timezone.now())        
         url = self.toggle_task_url(todo.id)
         self.assertTrue(todo.completed)
-        todo.session.finish_date = timezone.now()
+        todo.session.finished_at = timezone.now()
         todo.session.save()
         todo.refresh_from_db()
 

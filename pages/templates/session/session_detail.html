@@ -21,11 +21,11 @@
                 <span class="meta-label">Today:</span>
                 <span class="meta-value">{{today}}</span>
             </div>
-            {% if session.start_date %}
+            {% if session.started_at %}
                 <div class="meta-item status-started">
                     <span class="meta-icon">🚀</span>
                     <span class="meta-label">Started:</span>
-                    <span class="meta-value">{{ session.start_date }}</span>
+                    <span class="meta-value">{{ session.started_at }}</span>
                 </div>
             {% else %}
                 <div class="meta-item status-pending">
@@ -40,7 +40,7 @@
     <div class="session-actions">
         {% if request.user == session.room.admin %}
             
-            {% if not session.start_date %}
+            {% if not session.started_at %}
             <form action="{% url 'startsession' session_id=session.id %}" method="post">
                 {% csrf_token %}
                 <button type="submit" class="btn btn-primary btn-glow">
@@ -61,7 +61,7 @@
         {% endif %}
                 
         
-        {% if session.start_date %}
+        {% if session.started_at %}
             
         <a class="btn btn-secondary" href="{% url 'createtask' session_id=session.id %}">
             <span class="btn-icon">➕</span>
@@ -79,7 +79,7 @@
 </div>
 
 <!-- Session Status Messages -->
-{% if not session.start_date %}
+{% if not session.started_at %}
     <div class="status-message waiting">
         <div class="status-icon">🎯</div>
         <div class="status-content">
@@ -359,7 +359,7 @@
                 </h2>
             </div>
             <div class="card-content">
-                {% if not session.start_date %}
+                {% if not session.started_at %}
                     <div class="session-countdown">
                         <div class="countdown-icon">🚀</div>
                         <h3>Session Starting Soon!</h3>

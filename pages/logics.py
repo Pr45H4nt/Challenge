@@ -32,7 +32,7 @@ def join_session_logic(request, session_id):
 def start_session_logic(request, session_id):
     session = Session.objects.get(id=session_id)
     if session.room.admin == request.user:
-        session.start_date = timezone.now()
+        session.started_at = timezone.now()
         session.save()
         # fire signal
         session_started.send_robust(sender=Session, session_obj = session)
@@ -41,9 +41,9 @@ def start_session_logic(request, session_id):
 
 def end_session_logic(request, session_id):
     session = Session.objects.get(id=session_id)
-    if session.start_date:
+    if session.started_at:
         if session.room.admin == request.user:
-            session.finish_date = timezone.now()
+            session.finished_at = timezone.now()
             for task in session.todos.all():
                 if not task.completed:
                     task.completed = True

@@ -281,7 +281,7 @@ class TestSessionView(TestCase):
         url = self.start_session_url(session.id)
 
         # check if its started
-        self.assertIsNone(session.start_date)
+        self.assertIsNone(session.started_at)
 
         # admin logs in
         self.login()
@@ -291,10 +291,10 @@ class TestSessionView(TestCase):
 
         # session should be started 
         session.refresh_from_db()
-        self.assertIsNotNone(session.start_date)
+        self.assertIsNotNone(session.started_at)
         
         # since, 'now' can potentially differ, using date only to validate
-        self.assertEqual(session.start_date.date(), today)
+        self.assertEqual(session.started_at.date(), today)
 
     def test_non_admin_tries_start_session(self):
         # admin = self.user and additional members = self.user1, self.user2
@@ -303,7 +303,7 @@ class TestSessionView(TestCase):
         url = self.start_session_url(session.id)
 
         # check if its started
-        self.assertIsNone(session.start_date)
+        self.assertIsNone(session.started_at)
 
         # non-admin logs in
         self.client.login(
@@ -316,20 +316,20 @@ class TestSessionView(TestCase):
 
         # session should be started 
         session.refresh_from_db()
-        self.assertIsNone(session.start_date)
+        self.assertIsNone(session.started_at)
         
 
     def test_end_session(self):
         # admin = self.user and additional members = self.user1, self.user2
         session = self.create_usuable_session_with_members()
-        session.start_date = timezone.now()
+        session.started_at = timezone.now()
         session.save()
         session.refresh_from_db()
 
         url = self.end_session_url(session.id)
 
         # check if its started
-        self.assertIsNotNone(session.start_date)
+        self.assertIsNotNone(session.started_at)
         self.assertTrue(session.is_active)
 
         # admin logs in
@@ -340,23 +340,23 @@ class TestSessionView(TestCase):
 
         # session should be started 
         session.refresh_from_db()
-        self.assertIsNotNone(session.start_date)
-        self.assertIsNotNone(session.finish_date)
+        self.assertIsNotNone(session.started_at)
+        self.assertIsNotNone(session.finished_at)
         
         # since, 'now' can potentially differ, using date only to validate
-        self.assertEqual(session.finish_date.date(), today)
+        self.assertEqual(session.finished_at.date(), today)
 
     def test_non_admin_tries_end_session(self):
         # admin = self.user and additional members = self.user1, self.user2
         session = self.create_usuable_session_with_members()
-        session.start_date = timezone.now()
+        session.started_at = timezone.now()
         session.save()
         session.refresh_from_db()
 
         url = self.end_session_url(session.id)
 
         # check if its started
-        self.assertIsNotNone(session.start_date)
+        self.assertIsNotNone(session.started_at)
         self.assertTrue(session.is_active)
 
         # admin logs in
@@ -369,8 +369,8 @@ class TestSessionView(TestCase):
 
         # session should be started 
         session.refresh_from_db()
-        self.assertIsNotNone(session.start_date)
-        self.assertIsNone(session.finish_date)
+        self.assertIsNotNone(session.started_at)
+        self.assertIsNone(session.finished_at)
 
     
     def test_session_update(self):
