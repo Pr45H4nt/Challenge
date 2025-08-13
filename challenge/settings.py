@@ -53,7 +53,8 @@ MIDDLEWARE = [
     'django.contrib.auth.middleware.AuthenticationMiddleware',
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
-    'authapp.middleware.UpdateLastOnlineMiddleware'
+    'authapp.middleware.UpdateLastOnlineMiddleware',
+    'pages.middleware.SessionDeadlineMiddleware',
 ]
 
 ROOT_URLCONF = 'challenge.urls'

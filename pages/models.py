@@ -16,7 +16,7 @@ class Room(models.Model):
     name = models.CharField(max_length=100, unique=True)
     bio = models.TextField(blank=True, null=True)
     password = models.CharField(max_length=100, blank=True, null= True)
-    members = models.ManyToManyField(CustomUser, related_name='members_rooms')
+    members = models.ManyToManyField(CustomUser, through='RoomMembership', related_name='members_rooms')
     created_on = models.DateTimeField(auto_now_add=True)
     admin = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='admin_rooms')
 
@@ -107,6 +107,14 @@ class Room(models.Model):
     def __str__(self):
         return f"{self.name}"
     
+class RoomMembership(models.Model):
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE)
+    room = models.ForeignKey(Room, on_delete=models.CASCADE)
+    joined_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('user', 'room')
+    
     
 class Session(models.Model):
     id = models.UUIDField(primary_key=True,default=uuid.uuid4, editable=False)
@@ -116,6 +124,9 @@ class Session(models.Model):
     started_at = models.DateTimeField(null=True,blank=True)
     finished_at = models.DateTimeField(null=True, blank=True)
     members = models.ManyToManyField(CustomUser, related_name='sessions', blank=True)
+
+    deadline = models.DateField(null=True, blank=True)
+    auto_end = models.BooleanField(default=False)
     
     def clean(self):
         if Session.objects.filter(name=self.name, room = self.room).exclude(id=self.id).exists():
@@ -308,4 +319,7 @@ class RoomRanking(models.Model):
         ordering = ['rank']
 
 
+class SystemStatus(models.Model):
+    key = models.CharField(max_length=50, unique=True)
+    value = models.CharField(max_length=255)
 

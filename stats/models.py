@@ -1,5 +1,5 @@
 from django.db import models
-from pages.models import Room, CustomUser
+from pages.models import Room, CustomUser, RoomMembership
 import uuid
 from django.utils import timezone
 from django.core.exceptions import PermissionDenied
@@ -41,7 +41,34 @@ class Notice(models.Model):
     def is_posted_today(self):
         today = timezone.localdate()
         return today == self.created_on.date()
+    
+    def is_read(self, user):
+        read_flag = NoticeReadStatus.objects.filter(notice=self, user=user).exists()
+        if read_flag:
+            return True
 
+        # check if user joined the room before the notice was created
+        joined_before_notification = RoomMembership.objects.filter(
+            room=self.room,
+            user=user,
+            joined_on__lt=self.created_on
+        ).exists()
+
+        # if user joined before the notice, but hasn't read it => unread (False)
+        # if user joined after notice was created => consider it read (True)
+        return not joined_before_notification
+
+    def mark_as_read(self, user):
+        NoticeReadStatus.objects.get_or_create(notice=self, user=user)
 
     def __str__(self):
         return f"📌 {self.title} - {self.room.name}"
+    
+
+class NoticeReadStatus(models.Model):
+    notice = models.ForeignKey(Notice, on_delete=models.CASCADE, related_name='read_statuses')
+    user = models.ForeignKey(CustomUser, on_delete=models.CASCADE, related_name='notice_reads')
+    read_on = models.DateTimeField(auto_now_add=True)
+
+    class Meta:
+        unique_together = ('notice', 'user')
