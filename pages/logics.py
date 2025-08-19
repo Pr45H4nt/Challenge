@@ -1,5 +1,5 @@
 from django.urls import reverse_lazy
-from stats.models import Notice
+from stats.models import Notice, NoticeReadStatus
 from .models import Session, CustomUser
 from django.utils import timezone
 from django.shortcuts import get_object_or_404 , redirect, HttpResponse, render
@@ -133,3 +133,24 @@ def notice_toggle_task(request, task):
     title = f"{user} completed a task"
     content = f"<strong>{user}</strong> completed the task <em>{todo}</em> in the <strong>{session}</strong> session."
     Notice.objects.create(room=task.session.room, title=title, content=content, is_html=True)
+
+
+
+def get_unread_notices(room, user):
+    # get notices after the user has joined 
+    joined_on = room.roommembership_set.get(user=user).joined_on
+    # if the notice doesnot have noticerread row then stack it in output
+    notices = Notice.objects.filter(room = room, created_on__gt =joined_on).exclude(author=user).prefetch_related('read_statuses') \
+                .exclude(read_statuses__user=user).prefetch_related('read_statuses')
+
+    return notices
+
+
+def notice_mark_all_as_seen(room, user):
+    notices = get_unread_notices(room, user)
+    statuses = [
+        NoticeReadStatus(notice = notice, user = user)
+        for notice in notices
+    ]
+    NoticeReadStatus.objects.bulk_create(statuses)
+

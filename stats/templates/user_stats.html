@@ -1,0 +1,929 @@
+{% extends 'base.html' %}
+
+{% block title %}
+Productivity Dashboard
+
+{% endblock title %}
+
+{% block head %}
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/5.15.4/css/all.min.css" rel="stylesheet">
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #0f172a;
+            color: #e2e8f0;
+            line-height: 1.6;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 0 20px;
+        }
+
+        /* Header */
+        .header {
+            background: linear-gradient(135deg, #4338ca 0%, #7c2d92 100%);
+            color: white;
+            padding: 40px 0;
+            margin-bottom: 40px;
+        }
+
+        .header-content {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .header h1 {
+            font-size: 2.5rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+        }
+
+        .header p {
+            font-size: 1.2rem;
+            opacity: 0.9;
+        }
+
+        .streak-info {
+            text-align: right;
+        }
+
+        .streak-number {
+            font-size: 2rem;
+            font-weight: 700;
+        }
+
+        .streak-label {
+            font-size: 0.9rem;
+            opacity: 0.8;
+        }
+
+        /* Grid System */
+        .grid {
+            display: grid;
+            gap: 24px;
+            margin-bottom: 40px;
+        }
+
+        .grid-4 {
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+        }
+
+        .grid-2 {
+            grid-template-columns: repeat(auto-fit, minmax(500px, 1fr));
+        }
+
+        .grid-3 {
+            grid-template-columns: repeat(auto-fit, minmax(350px, 1fr));
+        }
+
+        /* Cards */
+        .card {
+            background: #1e293b;
+            border-radius: 12px;
+            padding: 24px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+            transition: all 0.3s ease;
+            border: 1px solid #334155;
+        }
+
+        .card:hover {
+            transform: translateY(-4px);
+            box-shadow: 0 8px 25px rgba(0, 0, 0, 0.5);
+            border-color: #475569;
+        }
+
+        .stat-card {
+            display: flex;
+            justify-content: space-between;
+            align-items: flex-start;
+        }
+
+        .stat-content h3 {
+            font-size: 2rem;
+            font-weight: 700;
+            color: #f1f5f9;
+            margin-bottom: 4px;
+        }
+
+        .stat-content p {
+            color: #94a3b8;
+            font-size: 0.9rem;
+            font-weight: 500;
+        }
+
+        .stat-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.5rem;
+        }
+
+        .stat-icon.blue { background-color: #dbeafe; color: #2563eb; }
+        .stat-icon.green { background-color: #dcfce7; color: #16a34a; }
+        .stat-icon.purple { background-color: #f3e8ff; color: #9333ea; }
+        .stat-icon.orange { background-color: #fed7aa; color: #ea580c; }
+
+        .stat-details {
+            margin-top: 16px;
+            display: flex;
+            align-items: center;
+            color: #94a3b8;
+            font-size: 0.85rem;
+        }
+
+        .stat-details i {
+            margin-right: 8px;
+        }
+
+        /* Progress Bar */
+        .progress-container {
+            margin-top: 16px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 8px;
+            background-color: #334155;
+            border-radius: 4px;
+            overflow: hidden;
+        }
+
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #10b981, #059669);
+            border-radius: 4px;
+        }
+
+        .progress-labels {
+            display: flex;
+            justify-content: space-between;
+            margin-top: 8px;
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        /* Chart Container */
+        .chart-container {
+            position: relative;
+            height: 200px;
+            margin-top: 20px;
+        }
+
+        .chart-container.large {
+            height: 280px;
+        }
+
+        /* Card Headers */
+        .card-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 24px;
+        }
+
+        .card-title {
+            font-size: 1.25rem;
+            font-weight: 700;
+            color: #c9cdd4;
+            display: flex;
+            align-items: center;
+        }
+
+        .card-title i {
+            margin-right: 8px;
+        }
+
+        .card-subtitle {
+            font-size: 0.9rem;
+            color: #64748b;
+        }
+
+        /* Rankings */
+        .ranking-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 16px;
+        }
+
+        .ranking-card {
+            text-align: center;
+            padding: 20px;
+            border-radius: 8px;
+        }
+
+        .ranking-card.gold { background-color: #451a03; border: 1px solid #a16207; }
+        .ranking-card.silver { background-color: #1e293b; border: 1px solid #475569; }
+        .ranking-card.bronze { background-color: #1e3a8a; border: 1px solid #3b82f6; }
+        .ranking-card.other { background-color: #7f1d1d; border: 1px solid #dc2626; }
+
+        .ranking-number {
+            font-size: 1.8rem;
+            font-weight: 700;
+            margin-bottom: 4px;
+        }
+
+        .ranking-card.gold .ranking-number { color: #fbbf24; }
+        .ranking-card.silver .ranking-number { color: #e2e8f0; }
+        .ranking-card.bronze .ranking-number { color: #60a5fa; }
+        .ranking-card.other .ranking-number { color: #f87171; }
+
+        .ranking-label {
+            font-size: 0.8rem;
+            color: #94a3b8;
+            margin-bottom: 8px;
+        }
+
+        /* Activity Lists */
+        .activity-list {
+            space-y: 12px;
+        }
+
+        .activity-item {
+            display: flex;
+            align-items: center;
+            padding: 12px;
+            background-color: #334155;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #475569;
+        }
+
+        .activity-icon {
+            margin-right: 12px;
+            width: 16px;
+            text-align: center;
+        }
+
+        .activity-icon.completed { color: #10b981; }
+        .activity-icon.pending { color: #64748b; }
+
+        .activity-content {
+            flex: 1;
+        }
+
+        .activity-title {
+            font-weight: 600;
+            color: #f1f5f9;
+            margin-bottom: 2px;
+        }
+
+        .activity-meta {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .activity-badge {
+            padding: 4px 8px;
+            border-radius: 12px;
+            font-size: 0.7rem;
+            font-weight: 600;
+        }
+
+        .badge-done {
+            background-color: #dcfce7;
+            color: #166534;
+        }
+
+        .badge-active {
+            background-color: #fef3c7;
+            color: #92400e;
+        }
+
+        .activity-hours {
+            text-align: right;
+        }
+
+        .hours-number {
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        /* Top Sessions Sidebar */
+        .session-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 12px;
+            background-color: #334155;
+            border-radius: 8px;
+            margin-bottom: 12px;
+            border: 1px solid #475569;
+        }
+
+        .session-info h4 {
+            font-weight: 600;
+            color: #f1f5f9;
+            font-size: 0.9rem;
+            margin-bottom: 2px;
+        }
+
+        .session-room {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        .session-stats {
+            text-align: right;
+        }
+
+        .session-hours {
+            font-weight: 700;
+            color: #60a5fa;
+        }
+
+        .session-todos {
+            font-size: 0.75rem;
+            color: #94a3b8;
+        }
+
+        /* Responsive */
+        @media (max-width: 768px) {
+            .header-content {
+                flex-direction: column;
+                text-align: center;
+            }
+
+            .header h1 {
+                font-size: 2rem;
+            }
+
+            .streak-info {
+                text-align: center;
+                margin-top: 20px;
+            }
+
+            .grid-2 {
+                grid-template-columns: 1fr;
+            }
+
+            .grid-3 {
+                grid-template-columns: 1fr;
+            }
+
+            .stat-card {
+                flex-direction: column;
+                align-items: flex-start;
+            }
+
+            .stat-icon {
+                margin-top: 16px;
+                align-self: flex-end;
+            }
+        }
+
+        /* Animations */
+        .fade-in {
+            animation: fadeIn 0.6s ease-in-out;
+        }
+
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+
+        .advisory-note {
+        background: linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%);
+        border: 2px solid #f97316;
+        border-radius: 16px;
+        padding: 1.5rem;
+        margin-bottom: 2rem;
+        box-shadow: 0 8px 32px rgba(249, 115, 22, 0.1);
+        backdrop-filter: blur(10px);
+    }
+
+    .advisory-note h4 {
+        color: #ea580c;
+        font-weight: 700;
+        margin-bottom: 0.5rem;
+        display: flex;
+        align-items: center;
+        gap: 0.5rem;
+    }
+
+    .advisory-note p {
+        color: #9a3412;
+        font-weight: 500;
+    }
+        </style>
+{% endblock head %}
+    
+    
+{% block content %}
+    <div class="header">
+        <div class="container">
+            <div class="header-content">
+                <div>
+                    <h1>
+                        <i class="fas fa-chart-line"></i>
+                        Productivity Dashboard
+                    </h1>
+                    <p>Track your progress and optimize your workflow</p>
+                </div>
+                <div class="streak-info">
+                    <div class="streak-number">{{ current_streak }}</div>
+                    <div class="streak-label">Day Streak</div>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <div class="advisory-note">
+ <h4>⏰ Time Tracking Accuracy Tip</h4>
+<p>For the most accurate statistics, add your work hours immediately after completing a work session.
+ Our system calculates your work period by subtracting the logged hours from the time you submit them.
+ For example, if you log 2 hours at 11:00 AM, we assume you worked from 9:00 AM to 11:00 AM.</p>
+<p>Don't worry if you occasionally forget or make timing mistakes - these don't matter much in the long run. Just try to be accurate when you can.</p>
+</div>
+
+    <div class="container">
+        <!-- Key Metrics Overview -->
+        <div class="grid grid-4">
+            <!-- Total Hours -->
+            <div class="card stat-card fade-in">
+                <div class="stat-content">
+                    <h3>{{ total_hours }}</h3>
+                    <p>Total Hours</p>
+                    <div class="stat-details">
+                        <i class="fas fa-calendar-alt"></i>
+                        <span>Across {{ sessions_count }} sessions</span>
+                    </div>
+                </div>
+                <div class="stat-icon blue">
+                    <i class="fas fa-clock"></i>
+                </div>
+            </div>
+
+            <!-- Completion Rate -->
+            <div class="card fade-in">
+                <div class="stat-card">
+                    <div class="stat-content">
+                        <h3>{{ completion_rate }}%</h3>
+                        <p>Completion Rate</p>
+                    </div>
+                    <div class="stat-icon green">
+                        <i class="fas fa-check-circle"></i>
+                    </div>
+                </div>
+                <div class="progress-container">
+                    <div class="progress-bar">
+                        <div class="progress-fill" style="width: {{ completion_rate }}%"></div>
+                    </div>
+                    <div class="progress-labels">
+                        <span>{{ completed_todos }} completed</span>
+                        <span>{{ total_todos }} total</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Average Room Rank -->
+            <div class="card stat-card fade-in">
+                <div class="stat-content">
+                    <h3>#{{ avg_room_rank }}</h3>
+                    <p>Avg Room Rank</p>
+                    <div class="stat-details">
+                        <i class="fas fa-users"></i>
+                        <span>In {{ rooms_count }} rooms</span>
+                    </div>
+                </div>
+                <div class="stat-icon purple">
+                    <i class="fas fa-trophy"></i>
+                </div>
+            </div>
+
+            <!-- Streak Info -->
+            <div class="card stat-card fade-in">
+                <div class="stat-content">
+                    <h3>{{ longest_streak }}</h3>
+                    <p>Longest Streak</p>
+                    <div class="stat-details">
+                        <i class="fas fa-calendar-check"></i>
+                        <span>Current: {{ current_streak }} days</span>
+                    </div>
+                </div>
+                <div class="stat-icon orange">
+                    <i class="fas fa-fire"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Time Analytics Charts -->
+        <div class="grid grid-2">
+            <!-- Daily Hours Trend -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-line" style="color: #2563eb;"></i>
+                        Daily Hours (30 Days)
+                    </div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="dailyHoursChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Weekly Distribution -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-calendar-week" style="color: #9333ea;"></i>
+                        Weekly Distribution
+                    </div>
+                    <div class="card-subtitle">Peak: {{ weekly_productivity.peak_day }}</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="weeklyProductivityChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Monthly Overview -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-chart-bar" style="color: #16a34a;"></i>
+                        Monthly Overview
+                    </div>
+                    <div class="card-subtitle">Last 12 months</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="monthlyHoursChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Hourly Productivity -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-clock" style="color: #ea580c;"></i>
+                        Hourly Productivity
+                    </div>
+                    
+                    <div class="card-subtitle">Peak: {{ hourly_productivity.peak_hour }}</div>
+                </div>
+                <div class="chart-container">
+                    <canvas id="hourlyProductivityChart"></canvas>
+                </div>
+            </div>
+        </div>
+
+        <!-- Room Performance & Top Sessions -->
+        <div class="grid grid-3">
+            <!-- Room Performance -->
+            <div class="card fade-in" style="grid-column: span 2;">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-users" style="color: #6366f1;"></i>
+                        Room Performance
+                    </div>
+                </div>
+                <div class="chart-container large">
+                    <canvas id="roomPerformanceChart"></canvas>
+                </div>
+            </div>
+
+            <!-- Top Sessions -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-star" style="color: #eab308;"></i>
+                        Top Sessions
+                    </div>
+                </div>
+                <div class="activity-list">
+                    {% for session in top_sessions|slice:":5" %}
+                    <div class="session-item">
+                        <div class="session-info">
+                            <h4>{{ session.name|truncatechars:20 }}</h4>
+                            <div class="session-room">{{ session.room }}</div>
+                        </div>
+                        <div class="session-stats">
+                            <div class="session-hours">{{ session.hours }}h</div>
+                            <div class="session-todos">{{ session.todos_count }} todos</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+
+        <!-- Ranking Distribution -->
+        <div class="card fade-in">
+            <div class="card-header">
+                <div class="card-title">
+                    <i class="fas fa-medal" style="color: #d97706;"></i>
+                    Ranking Distribution
+                </div>
+            </div>
+            <div class="ranking-grid">
+                <div class="ranking-card gold">
+                    <div class="ranking-number">{{ room_rank_distribution.rank_1 }}</div>
+                    <div class="ranking-label">1st Place</div>
+                    <i class="fas fa-crown" style="color: #d97706;"></i>
+                </div>
+                <div class="ranking-card silver">
+                    <div class="ranking-number">{{ room_rank_distribution.rank_2_3 }}</div>
+                    <div class="ranking-label">2nd-3rd Place</div>
+                    <i class="fas fa-medal" style="color: #64748b;"></i>
+                </div>
+                <div class="ranking-card bronze">
+                    <div class="ranking-number">{{ room_rank_distribution.rank_4_10 }}</div>
+                    <div class="ranking-label">4th-10th Place</div>
+                    <i class="fas fa-certificate" style="color: #2563eb;"></i>
+                </div>
+                <div class="ranking-card other">
+                    <div class="ranking-number">{{ room_rank_distribution.rank_10_plus }}</div>
+                    <div class="ranking-label">10+ Place</div>
+                    <i class="fas fa-arrow-down" style="color: #dc2626;"></i>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recent Activity -->
+        <div class="grid grid-2">
+            <!-- Recent Todos -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-tasks" style="color: #2563eb;"></i>
+                        Recent Todos
+                    </div>
+                </div>
+                <div class="activity-list">
+                    {% for todo in recent_todos %}
+                    <div class="activity-item">
+                        <div class="activity-icon {% if todo.completed %}completed{% else %}pending{% endif %}">
+                            {% if todo.completed %}
+                                <i class="fas fa-check-circle"></i>
+                            {% else %}
+                                <i class="far fa-circle"></i>
+                            {% endif %}
+                        </div>
+                        <div class="activity-content">
+                            <div class="activity-title">{{ todo.title|truncatechars:40 }}</div>
+                            <div class="activity-meta">{{ todo.created_on|date:"M d, Y" }}</div>
+                        </div>
+                        {% if todo.completed %}
+                            <span class="activity-badge badge-done">Done</span>
+                        {% else %}
+                            <span class="activity-badge badge-active">Active</span>
+                        {% endif %}
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <!-- Recent Time Tracks -->
+            <div class="card fade-in">
+                <div class="card-header">
+                    <div class="card-title">
+                        <i class="fas fa-stopwatch" style="color: #16a34a;"></i>
+                        Recent Time Tracks
+                    </div>
+                </div>
+                <div class="activity-list">
+                    {% for track in recent_tracks %}
+                    <div class="activity-item">
+                        <div class="activity-content">
+                            <div class="activity-title">{{ track.todo.title|truncatechars:30 }}</div>
+                            <div class="activity-meta">{{ track.day|date:"M d, Y" }} • {{ track.todo.session.name|truncatechars:15 }}</div>
+                        </div>
+                        <div class="activity-hours">
+                            <div class="hours-number">{{ track.hours }}h</div>
+                        </div>
+                    </div>
+                    {% endfor %}
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Enhanced Chart.js configuration
+        Chart.defaults.font.family = 'Segoe UI, Tahoma, Geneva, Verdana, sans-serif';
+        Chart.defaults.color = '#64748b';
+        
+        // Daily Hours Chart with gradient
+        const dailyCtx = document.getElementById('dailyHoursChart').getContext('2d');
+        const dailyGradient = dailyCtx.createLinearGradient(0, 0, 0, 120);
+        dailyGradient.addColorStop(0, 'rgba(37, 99, 235, 0.3)');
+        dailyGradient.addColorStop(1, 'rgba(37, 99, 235, 0.05)');
+
+        new Chart(dailyCtx, {
+            type: 'line',
+            data: {
+                labels: {{ daily_labels|safe }},
+                datasets: [{
+                    label: 'Hours',
+                    data: {{ daily_hours|safe }},
+                    borderColor: '#60a5fa',
+                    backgroundColor: dailyGradient,
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4,
+                    pointBackgroundColor: '#60a5fa',
+                    pointBorderColor: '#1e293b',
+                    pointBorderWidth: 2,
+                    pointRadius: 3,
+                    pointHoverRadius: 5
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#475569' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Weekly Productivity Chart
+        new Chart(document.getElementById('weeklyProductivityChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ weekly_productivity.labels|safe }},
+                datasets: [{
+                    label: 'Hours',
+                    data: {{ weekly_productivity.data|safe }},
+                    backgroundColor: [
+                        '#ef4444', '#f97316', '#f59e0b', '#10b981', 
+                        '#3b82f6', '#6366f1', '#8b5cf6'
+                    ],
+                    borderRadius: 4,
+                    borderSkipped: false
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#475569' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Monthly Hours Chart
+        new Chart(document.getElementById('monthlyHoursChart'), {
+            type: 'line',
+            data: {
+                labels: {{ monthly_labels|safe }},
+                datasets: [{
+                    label: 'Hours',
+                    data: {{ monthly_hours|safe }},
+                    borderColor: '#16a34a',
+                    backgroundColor: 'rgba(22, 163, 74, 0.1)',
+                    borderWidth: 2,
+                    fill: true,
+                    tension: 0.4
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#475569' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 11 } }
+                    }
+                }
+            }
+        });
+
+        // Room Performance Doughnut Chart
+        new Chart(document.getElementById('roomPerformanceChart'), {
+            type: 'doughnut',
+            data: {
+                labels: {{ room_labels|safe }},
+                datasets: [{
+                    data: {{ room_hours|safe }},
+                    backgroundColor: [
+                        '#ff6384', '#36a2eb', '#ffce56', '#4bc0c0', 
+                        '#9966ff', '#ff9f40', '#ff6384', '#c9cbcf'
+                    ],
+                    borderWidth: 0,
+                    cutout: '60%'
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'right',
+                        labels: { 
+                            usePointStyle: true, 
+                            padding: 15,
+                            font: { size: 12 }
+                        }
+                    }
+                }
+            }
+        });
+
+        // Hourly Productivity Chart
+        new Chart(document.getElementById('hourlyProductivityChart'), {
+            type: 'bar',
+            data: {
+                labels: {{ hourly_productivity.labels|safe }},
+                datasets: [{
+                    label: 'Hours',
+                    data: {{ hourly_productivity.data|safe }},
+                    backgroundColor: '#ea580c',
+                    borderRadius: 2
+                }]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: { display: false }
+                },
+                scales: {
+                    y: {
+                        beginAtZero: true,
+                        grid: { color: '#475569' },
+                        ticks: { font: { size: 11 } }
+                    },
+                    x: {
+                        grid: { display: false },
+                        ticks: { font: { size: 10 } }
+                    }
+                }
+            }
+        });
+
+        // Smooth fade-in animations
+        const observerOptions = {
+            threshold: 0.1,
+            rootMargin: '0px 0px -50px 0px'
+        };
+
+        const observer = new IntersectionObserver((entries) => {
+            entries.forEach(entry => {
+                if (entry.isIntersecting) {
+                    entry.target.style.opacity = '1';
+                    entry.target.style.transform = 'translateY(0)';
+                }
+            });
+        }, observerOptions);
+
+        document.querySelectorAll('.fade-in').forEach(el => {
+            el.style.opacity = '0';
+            el.style.transform = 'translateY(20px)';
+            el.style.transition = 'opacity 0.6s ease, transform 0.6s ease';
+            observer.observe(el);
+        });
+    </script>
+
+{% endblock content %}
+    
+
+

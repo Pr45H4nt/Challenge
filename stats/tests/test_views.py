@@ -3,6 +3,7 @@ from stats.models import Notice, CustomUser
 from pages.models import Room, Session
 from django.urls import reverse_lazy
 from django.utils import timezone
+import json
 
 
 class NoticeViewsTest(TestCase):
@@ -265,4 +266,52 @@ class NoticeViewsTest(TestCase):
 
         response = self.client.get(url)
         self.assertEqual(response.status_code, 403)
+
+    
+    def test_get_unread_notices(self):
+        notice1 = self.create_notice(author=self.user1)
+        kwargs = {
+            'room': notice1.room ,
+            'author': self.user2,
+            'title' : 'a test title2',
+            'content' : 'a test content',
+        }
+        notice2 = self.create_notice( **kwargs)
+        kwargs['author'] = self.user
+        notice3 = self.create_notice(**kwargs)
+
+
+        url = reverse_lazy('notice-actions', kwargs = {'room_id': notice1.room.id})
         
+        self.login()
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content)
+        self.assertIsNotNone(data.get('notices'))
+
+        expected_output = {
+            str(n.id)
+            for n in [notice2, notice1]
+        }
+
+        actual_output = {n['id'] for n in data['notices']}
+
+    
+        self.assertEqual(expected_output, actual_output)
+        
+        # mark all as true test
+        response = self.client.post(url)
+        data = json.loads(response.content)
+        self.assertTrue(data['success'])
+
+        response = self.client.get(url)
+        self.assertEqual(response.status_code, 200)
+        
+        data = json.loads(response.content)
+        self.assertEqual(len(data.get('notices')), 0)
+
+
+
+
+

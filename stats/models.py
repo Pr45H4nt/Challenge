@@ -43,6 +43,8 @@ class Notice(models.Model):
         return today == self.created_on.date()
     
     def is_read(self, user):
+        if self.author == user:
+            return True
         read_flag = NoticeReadStatus.objects.filter(notice=self, user=user).exists()
         if read_flag:
             return True

@@ -132,5 +132,21 @@ class NoticeViewsTest(TestCase):
 
         self.assertFalse(exists)
 
+    def test_notice_seen(self):
+        room = self.create_room()
+        notice = Notice.objects.create(
+            room = room,
+            author = self.user,
+            title = 'Hey How are you',
+            content = 'This is the content',
+            is_pinned = True,
+            is_admin = True
+        )
 
+        self.assertTrue(notice.is_read(self.user))
+        self.assertFalse(notice.is_read(self.user2))
+
+        notice.mark_as_read(self.user2)
+        notice.refresh_from_db()
+        self.assertTrue(notice.is_read(self.user2))
 

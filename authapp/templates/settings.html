@@ -80,6 +80,8 @@
             {% endif %}
 
             <a href="{% url 'changepass' %}">🔒 Change Password</a>
+            <a href="{% url 'download-user-data' %}">📊 Download Your Data</a>
+            <a href="{% url 'download-user-data' %}?group_by=task">💾 Download Your Data (Grouped)</a>
             <a href="{% url 'logout' %}" class="logout">🚪 Logout</a>
         </div>
     {% else %}

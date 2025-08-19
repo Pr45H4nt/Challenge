@@ -132,9 +132,18 @@ class Session(models.Model):
         if Session.objects.filter(name=self.name, room = self.room).exclude(id=self.id).exists():
             raise ValidationError({"name": "The name should be unique in a room!"})
         
-
         if self.finished_at and self.finished_at < self.started_at:
             raise ValidationError({'finished_at': "Finish date can't be behind the start date"})
+        
+        if not self.started_at and self.deadline:
+            raise ValidationError({'deadline': "Start the session to set a deadline"})
+        
+        if not self.deadline and self.auto_end:
+            raise ValidationError({'auto_end': "Set a deadline to turn on the auto end"})
+        
+        if self.deadline and self.deadline < self.started_at.date():
+            raise ValidationError({'deadline': "deadline date can't be behind the start date"})
+        
         
         session_members = self.members.all()
         room_members = self.room.members.all()
@@ -275,8 +284,9 @@ class Todo(models.Model):
 
 class TrackTodo(models.Model):
     todo = models.ForeignKey(Todo, on_delete=models.CASCADE, related_name='tracking')
-    day = models.DateField(null=True, blank=True, auto_now_add=True)
+    day = models.DateField( auto_now_add=True)
     hours = models.FloatField(default=0.0)
+    added_on_time = models.TimeField(null=True, blank=True, auto_now_add=True)
 
     def clean(self):
         if self.todo.completed:
@@ -322,4 +332,8 @@ class RoomRanking(models.Model):
 class SystemStatus(models.Model):
     key = models.CharField(max_length=50, unique=True)
     value = models.CharField(max_length=255)
+
+
+    def __str__(self):
+        return "Last Checked : " + str(self.value)
 

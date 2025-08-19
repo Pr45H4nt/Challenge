@@ -1,6 +1,6 @@
 from django.shortcuts import render
-from django.views.generic import ListView, CreateView, DeleteView, DetailView
-from .models import Notice, CustomUser, timezone
+from django.views.generic import ListView, CreateView, DeleteView, DetailView, TemplateView
+from .models import Notice, CustomUser
 from pages.models import TrackTodo
 from django.shortcuts import get_object_or_404, redirect
 from django.urls import reverse_lazy, reverse
@@ -14,7 +14,10 @@ import json
 from django.core.exceptions import PermissionDenied
 from django.core.serializers.json import DjangoJSONEncoder
 from django.contrib.auth.mixins import LoginRequiredMixin
-from pages.models import Room, Session, Todo, TrackTodo
+from pages.models import Room, Session, Todo, TrackTodo, RoomRanking, SessionRanking
+import calendar
+
+
 # Create your views here.
 
 class NoticeView(LoginRequiredMixin,MemberRequiredMixin,ListView):
@@ -795,3 +798,396 @@ class UserSessionStats(LoginRequiredMixin, MemberRequiredMixin, DetailView):
                 current_streak = 0
         
         return max_streak
+    
+
+
+
+class UserStatsView(LoginRequiredMixin, TemplateView):
+    template_name = 'user_stats.html'
+    
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        user = self.request.user
+        
+        # Basic stats
+        context.update(self.get_basic_stats(user))
+        
+        # Time-based analytics
+        context.update(self.get_time_analytics(user))
+        
+        # Room and session analytics
+        context.update(self.get_room_session_analytics(user))
+        
+        # Ranking analytics
+        context.update(self.get_ranking_analytics(user))
+        
+        # Productivity patterns
+        context.update(self.get_productivity_patterns(user))
+        
+        # Recent activity
+        context.update(self.get_recent_activity(user))
+        
+        return context
+    
+    def get_basic_stats(self, user):
+        """Get basic overview statistics"""
+        total_todos = Todo.objects.filter(user=user).count()
+        completed_todos = Todo.objects.filter(user=user, completed=True).count()
+        active_todos = total_todos - completed_todos
+        
+        total_hours = TrackTodo.objects.filter(todo__user=user).aggregate(
+            total=Sum('hours'))['total'] or 0
+        
+        rooms_count = user.members_rooms.count()
+        sessions_count = user.sessions.count()
+        admin_rooms_count = user.admin_rooms.count()
+        
+        completion_rate = (completed_todos / total_todos * 100) if total_todos > 0 else 0
+        
+        return {
+            'total_todos': total_todos,
+            'completed_todos': completed_todos,
+            'active_todos': active_todos,
+            'total_hours': round(total_hours, 2),
+            'rooms_count': rooms_count,
+            'sessions_count': sessions_count,
+            'admin_rooms_count': admin_rooms_count,
+            'completion_rate': round(completion_rate, 1)
+        }
+    
+    def get_time_analytics(self, user):
+        """Get time-based analytics for charts"""
+        now = timezone.now()
+        
+        # Last 30 days daily hours
+        daily_hours = []
+        daily_labels = []
+        for i in range(29, -1, -1):
+            day = now.date() - timedelta(days=i)
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                day=day
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            daily_hours.append(round(hours, 2))
+            daily_labels.append(day.strftime('%m/%d'))
+        
+        # Last 12 months monthly hours
+        monthly_hours = []
+        monthly_labels = []
+        for i in range(11, -1, -1):
+            month_date = now.date().replace(day=1) - timedelta(days=i*30)
+            # Get actual month start and end
+            month_start = month_date.replace(day=1)
+            if month_start.month == 12:
+                month_end = month_start.replace(year=month_start.year + 1, month=1, day=1) - timedelta(days=1)
+            else:
+                month_end = month_start.replace(month=month_start.month + 1, day=1) - timedelta(days=1)
+            
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                day__range=[month_start, month_end]
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            monthly_hours.append(round(hours, 2))
+            monthly_labels.append(month_start.strftime('%b %Y'))
+        
+        # Weekly hours (last 8 weeks)
+        weekly_hours = []
+        weekly_labels = []
+        for i in range(7, -1, -1):
+            week_start = now.date() - timedelta(days=now.weekday() + i*7)
+            week_end = week_start + timedelta(days=6)
+            
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                day__range=[week_start, week_end]
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            weekly_hours.append(round(hours, 2))
+            weekly_labels.append(f"Week of {week_start.strftime('%m/%d')}")
+        
+        return {
+            'daily_hours': daily_hours,
+            'daily_labels': daily_labels,
+            'monthly_hours': monthly_hours,
+            'monthly_labels': monthly_labels,
+            'weekly_hours': weekly_hours,
+            'weekly_labels': weekly_labels,
+        }
+    
+    def get_room_session_analytics(self, user):
+        """Get room and session performance analytics"""
+        # Hours per room
+        rooms = user.members_rooms.all()
+        room_hours = []
+        room_labels = []
+        
+        for room in rooms:
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                todo__session__room=room
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            room_hours.append(round(hours, 2))
+            room_labels.append(room.name)
+        
+        # Hours per session (top 10)
+        sessions = user.sessions.all()
+        session_data = []
+        
+        for session in sessions:
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                todo__session=session
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            if hours > 0:
+                session_data.append({
+                    'name': session.name,
+                    'room': session.room.name,
+                    'hours': round(hours, 2),
+                    'todos_count': Todo.objects.filter(user=user, session=session).count(),
+                    'completed_todos': Todo.objects.filter(user=user, session=session, completed=True).count()
+                })
+        
+        # Sort by hours and take top 10
+        session_data = sorted(session_data, key=lambda x: x['hours'], reverse=True)[:10]
+        
+        return {
+            'room_hours': room_hours,
+            'room_labels': room_labels,
+            'top_sessions': session_data,
+        }
+    
+    def get_ranking_analytics(self, user):
+        """Get ranking performance across rooms and sessions"""
+        room_rankings = RoomRanking.objects.filter(user=user).select_related('room')
+        session_rankings = SessionRanking.objects.filter(user=user).select_related('session')
+        
+        # Average ranks
+        avg_room_rank = room_rankings.aggregate(avg=Avg('rank'))['avg'] or 0
+        avg_session_rank = session_rankings.aggregate(avg=Avg('rank'))['avg'] or 0
+        
+        # Top performances (rank 1-3)
+        top_room_performances = room_rankings.filter(rank__lte=3).order_by('rank')
+        top_session_performances = session_rankings.filter(rank__lte=3).order_by('rank')
+        
+        # Ranking distribution
+        room_rank_distribution = {
+            'rank_1': room_rankings.filter(rank=1).count(),
+            'rank_2_3': room_rankings.filter(rank__in=[2, 3]).count(),
+            'rank_4_10': room_rankings.filter(rank__range=[4, 10]).count(),
+            'rank_10_plus': room_rankings.filter(rank__gt=10).count(),
+        }
+        
+        return {
+            'avg_room_rank': round(avg_room_rank, 1),
+            'avg_session_rank': round(avg_session_rank, 1),
+            'top_room_performances': top_room_performances,
+            'top_session_performances': top_session_performances,
+            'room_rank_distribution': room_rank_distribution,
+            'total_room_rankings': room_rankings.count(),
+            'total_session_rankings': session_rankings.count(),
+        }
+    
+    def get_productivity_patterns(self, user):
+        """Analyze productivity patterns"""
+        # Hour of day analysis (based on added_on_time)
+        hourly_hours = defaultdict(float)
+        
+        tracks = TrackTodo.objects.filter(
+            todo__user=user,
+            added_on_time__isnull=False
+        ).select_related('todo')
+        
+        for track in tracks:
+            # Estimate work end time based on added_on_time
+            end_hour = track.added_on_time.hour
+            start_hour = max(0, end_hour - int(track.hours))
+            
+            # Distribute hours across the working period
+            work_duration = end_hour - start_hour
+            if work_duration > 0:
+                hours_per_hour = track.hours / work_duration
+                for h in range(start_hour, end_hour):
+                    hourly_hours[h] += hours_per_hour
+            else:
+                hourly_hours[end_hour] += track.hours
+        
+        # Convert to lists for chart
+        hour_labels = [f"{h:02d}:00" for h in range(24)]
+        hour_data = [round(hourly_hours.get(h, 0), 2) for h in range(24)]
+        
+        # Day of week analysis
+        weekday_hours = defaultdict(float)
+        tracks = TrackTodo.objects.filter(todo__user=user)
+        
+        for track in tracks:
+            weekday = track.day.weekday()  # 0=Monday, 6=Sunday
+            weekday_hours[weekday] += track.hours
+        
+        weekday_labels = ['Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday']
+        weekday_data = [round(weekday_hours.get(i, 0), 2) for i in range(7)]
+        
+        # Find peak productivity times
+        peak_hour = max(range(24), key=lambda h: hourly_hours.get(h, 0)) if hourly_hours else 0
+        peak_day = max(range(7), key=lambda d: weekday_hours.get(d, 0)) if weekday_hours else 0
+        
+        return {
+            'hourly_productivity': {
+                'labels': hour_labels,
+                'data': hour_data,
+                'peak_hour': f"{peak_hour:02d}:00"
+            },
+            'weekly_productivity': {
+                'labels': weekday_labels,
+                'data': weekday_data,
+                'peak_day': weekday_labels[peak_day]
+            }
+        }
+    
+    def get_recent_activity(self, user):
+        """Get recent activity and streaks"""
+        # Recent todos
+        recent_todos = Todo.objects.filter(user=user).order_by('-created_on')[:5]
+        
+        # Recent time tracks
+        recent_tracks = TrackTodo.objects.filter(
+            todo__user=user
+        ).select_related('todo', 'todo__session').order_by('-day', '-added_on_time')[:10]
+        
+        # Calculate current streak
+        current_date = timezone.now().date()
+        streak_days = 0
+        
+        while True:
+            day_has_activity = TrackTodo.objects.filter(
+                todo__user=user,
+                day=current_date,
+                hours__gt=0
+            ).exists()
+            
+            if day_has_activity:
+                streak_days += 1
+                current_date -= timedelta(days=1)
+            else:
+                break
+        
+        # Calculate longest streak
+        all_active_days = set(
+            TrackTodo.objects.filter(
+                todo__user=user,
+                hours__gt=0
+            ).values_list('day', flat=True)
+        )
+        
+        longest_streak = 0
+        current_streak = 0
+        
+        if all_active_days:
+            sorted_days = sorted(all_active_days)
+            current_day = sorted_days[0]
+            current_streak = 1
+            
+            for i in range(1, len(sorted_days)):
+                if sorted_days[i] == current_day + timedelta(days=1):
+                    current_streak += 1
+                else:
+                    longest_streak = max(longest_streak, current_streak)
+                    current_streak = 1
+                current_day = sorted_days[i]
+            
+            longest_streak = max(longest_streak, current_streak)
+        
+        return {
+            'recent_todos': recent_todos,
+            'recent_tracks': recent_tracks,
+            'current_streak': streak_days,
+            'longest_streak': longest_streak,
+        }
+
+
+class UserStatsAPIView(LoginRequiredMixin, TemplateView):
+    """
+    API view to return JSON data for AJAX requests
+    (can be converted to DRF ViewSet if needed)
+    """
+    
+    def get(self, request, *args, **kwargs):
+        from django.http import JsonResponse
+        
+        data_type = request.GET.get('type', 'basic')
+        user = request.user
+        
+        if data_type == 'daily_hours':
+            # Return daily hours for the last 30 days
+            daily_data = self.get_daily_hours(user)
+            return JsonResponse(daily_data)
+        
+        elif data_type == 'room_performance':
+            # Return room performance data
+            room_data = self.get_room_performance(user)
+            return JsonResponse(room_data)
+        
+        # Add more data types as needed
+        return JsonResponse({'error': 'Invalid data type'})
+    
+    def get_daily_hours(self, user, days=30):
+        """Get daily hours for specified number of days"""
+        now = timezone.now()
+        daily_hours = []
+        
+        for i in range(days-1, -1, -1):
+            day = now.date() - timedelta(days=i)
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                day=day
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            daily_hours.append({
+                'date': day.strftime('%Y-%m-%d'),
+                'hours': round(hours, 2)
+            })
+        
+        return {'daily_hours': daily_hours}
+    
+    def get_room_performance(self, user):
+        """Get performance data per room"""
+        rooms = user.members_rooms.all()
+        room_data = []
+        
+        for room in rooms:
+            hours = TrackTodo.objects.filter(
+                todo__user=user,
+                todo__session__room=room
+            ).aggregate(total=Sum('hours'))['total'] or 0
+            
+            todos_count = Todo.objects.filter(
+                user=user,
+                session__room=room
+            ).count()
+            
+            completed_todos = Todo.objects.filter(
+                user=user,
+                session__room=room,
+                completed=True
+            ).count()
+            
+            # Get current ranking in room
+            ranking = RoomRanking.objects.filter(
+                room=room,
+                user=user
+            ).first()
+            
+            room_data.append({
+                'name': room.name,
+                'hours': round(hours, 2),
+                'todos_count': todos_count,
+                'completed_todos': completed_todos,
+                'completion_rate': round((completed_todos/todos_count*100) if todos_count > 0 else 0, 1),
+                'current_rank': ranking.rank if ranking else None,
+                'is_admin': room.admin == user
+            })
+        
+        return {'rooms': room_data}

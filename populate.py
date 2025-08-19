@@ -42,6 +42,8 @@ def create_users(num_users=20):
     
     return users
 
+
+
 def create_rooms(users, num_rooms=10):
     """Create random rooms with random members"""
     rooms = []
@@ -53,7 +55,8 @@ def create_rooms(users, num_rooms=10):
     ]
     
     for i in range(num_rooms):
-        name = random.choice(room_names) + f" {i+1}" if i >= len(room_names) else room_names[i]
+        choosen = random.choice(room_names)
+        name = choosen + f" {i+1}" if i >= len(room_names) else room_names[i]
         bio = fake.text(max_nb_chars=200)
         admin = random.choice(users)
         
@@ -66,6 +69,7 @@ def create_rooms(users, num_rooms=10):
             password=password,
             admin=admin
         )
+        room_names.remove(choosen)
         
         # Add random members (including admin)
         num_members = random.randint(3, min(10, len(users)))
@@ -104,7 +108,7 @@ def create_sessions(rooms, num_sessions_per_room=3):
                 days_ago = random.randint(15, 60)
                 started_at = timezone.now() - timedelta(days=days_ago)
                 session_length = random.randint(3, 14)
-                finished_at = (started_at + timedelta(days=session_length)).date()
+                finished_at = (started_at + timedelta(days=session_length))
                 
             elif session_type == 'current' and not active_session_created:
                 # Current active session (no finish date or future finish date)
@@ -114,7 +118,7 @@ def create_sessions(rooms, num_sessions_per_room=3):
                 # 50% chance of having finish date in future, 50% no finish date
                 if random.random() < 0.5:
                     future_days = random.randint(5, 20)
-                    finished_at = (timezone.now() + timedelta(days=future_days)).date()
+                    finished_at = (timezone.now() + timedelta(days=future_days))
                 else:
                     finished_at = None
                 active_session_created = True
@@ -125,13 +129,13 @@ def create_sessions(rooms, num_sessions_per_room=3):
                     days_ahead = random.randint(1, 30)
                     started_at = timezone.now() + timedelta(days=days_ahead)
                     session_length = random.randint(5, 20)
-                    finished_at = (started_at + timedelta(days=session_length)).date()
+                    finished_at = (started_at + timedelta(days=session_length))
                 else:
                     # Additional past session
                     days_ago = random.randint(30, 90)
                     started_at = timezone.now() - timedelta(days=days_ago)
                     session_length = random.randint(3, 14)
-                    finished_at = (started_at + timedelta(days=session_length)).date()
+                    finished_at = (started_at + timedelta(days=session_length))
             
             try:
                 session = Session.objects.create(
@@ -200,8 +204,8 @@ def create_todos_and_tracking(sessions):
                 if completed:
                     # Random completion date within session period
                     if session.started_at:
-                        start = session.started_at.date()
-                        end = session.finished_at or timezone.now().date()
+                        start = session.started_at
+                        end = session.finished_at or timezone.now()
                         days_diff = (end - start).days
                         if days_diff > 0:
                             completed_on = start + timedelta(days=random.randint(0, days_diff))
@@ -224,9 +228,11 @@ def create_todos_and_tracking(sessions):
 def create_tracking_for_todo(todo, session):
     """Create random tracking data for a todo"""
     # Generate tracking data for random days
+    if todo.completed:
+        return
     if session.started_at:
-        started_at = session.started_at.date()
-        today = timezone.now().date()
+        started_at = session.started_at
+        today = timezone.now()
         
         # For past sessions, use the finish date or a reasonable end date
         if session.finished_at and session.finished_at <= today:
@@ -252,7 +258,6 @@ def create_tracking_for_todo(todo, session):
                     todo=todo,
                     day=current_date,
                     hours=daily_hours,
-                    hours_till_day=cumulative_hours
                 )
             
             current_date += timedelta(days=1)

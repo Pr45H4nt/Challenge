@@ -126,6 +126,7 @@
             <ul class="nav-links">
                 {% if user.is_authenticated %}
                 <li><a href="{% url 'dashboard' %}">Dashboard</a></li>
+                <li><a href="{% url 'my-stats' %}">My Performance</a></li>
                 
                     
                 <li><a href="{% url 'profile' request.user.username %}">Profile</a></li>
@@ -136,7 +137,7 @@
                 <li><a href="{% url 'signup' %}">Signup</a></li>
 
                 {% endif %}
-                <li><a href="https://prashant69.com.np/" target="_blank">About Me</a></li>
+                <li><a href="https://prashant69.com.np/" target="_blank">About the developer</a></li>
             </ul>
         </div>
     </nav>

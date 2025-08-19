@@ -1,6 +1,6 @@
 {% extends 'base.html' %}
 
-{% block title %}Add New Task - Challenge{% endblock %}
+{% block title %}Update session details{% endblock %}
 
 {% block content %}
 <div class="content-block">
@@ -30,24 +30,67 @@
         </div>
 
         <div style="margin-bottom: 1.5rem;">
-            <label style="display: block; margin-bottom: 0.5rem; color: #e0e0e0;">Session Description</label>
-            <input type="text" name="description" style="
-                width: 100%;
-                padding: 12px;
-                background: #1a1a1a;
-                border: 1px solid #3d3d3d;
-                border-radius: 6px;
-                color: #e0e0e0;
-                font-size: 16px;
-                box-sizing: border-box;
-            " placeholder="Describe what this session is for..." value="{{session.description}}">
-            
-            {% if form.description.errors %}
-                {% for error in form.description.errors %}
-                    <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
-                {% endfor %}
-            {% endif %}
-        </div>
+    <label style="display: block; margin-bottom: 0.5rem; color: #e0e0e0;">Session Description</label>
+    <textarea name="description" style="
+        width: 100%;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #3d3d3d;
+        border-radius: 6px;
+        color: #e0e0e0;
+        font-size: 16px;
+        box-sizing: border-box;
+        min-height: 120px;
+        resize: vertical;
+    " placeholder="Describe what this session is for...">{{ session.description }}</textarea>
+    
+    {% if form.description.errors %}
+        {% for error in form.description.errors %}
+            <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+
+        <div style="margin-bottom: 1.5rem;">
+    <label style="display: block; margin-bottom: 0.5rem; color: #e0e0e0;">Deadline</label>
+    <input type="date" name="deadline" style="
+        width: 100%;
+        padding: 12px;
+        background: #1a1a1a;
+        border: 1px solid #3d3d3d;
+        border-radius: 6px;
+        color: #e0e0e0;
+        font-size: 16px;
+        box-sizing: border-box;
+    " value="{{ session.deadline|date:'Y-m-d' }}">
+    
+    {% if form.deadline.errors %}
+        {% for error in form.deadline.errors %}
+            <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+        <div style="margin-bottom: 1.5rem;">
+    <label style="display: flex; align-items: center; gap: 0.5rem; color: #e0e0e0; cursor: pointer;">
+        <input type="checkbox" name="auto_end" style="
+            width: 18px;
+            height: 18px;
+            accent-color: #3d3d3d;
+            cursor: pointer;
+        " {% if session.auto_end %}checked{% endif %}>
+        Auto End
+    </label>
+
+    {% if form.auto_end.errors %}
+        {% for error in form.auto_end.errors %}
+            <div style="color: #ff6b6b; font-size: 14px; margin-top: 5px;">{{ error }}</div>
+        {% endfor %}
+    {% endif %}
+</div>
+
+        
         
         <div style="text-align: center;">
             <button type="submit" style="

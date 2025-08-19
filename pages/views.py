@@ -122,7 +122,7 @@ class SessionSettingsView(LoginRequiredMixin,MemberRequiredMixin,DetailView):
 
 class SessionUpdateView(LoginRequiredMixin,NotDemoUserMixin, AdminPermRequired,UpdateView ):
     model = Session
-    fields = ['name', 'description']
+    fields = ['name', 'description', 'deadline', 'auto_end']
     pk_url_kwarg = 'session_id'
     context_object_name = 'session'
     template_name = 'session/update_session_info.html'

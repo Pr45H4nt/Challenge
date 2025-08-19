@@ -180,8 +180,9 @@ class TestViews(TestCase):
 
         self.login()
         response = self.client.get(url)
+
+        self.assertEqual(response.status_code, 200)
     
-        self.assertNotContains(response, "You are not logged in")
 
 
     def test_display_settings_invalid(self):
@@ -189,4 +190,4 @@ class TestViews(TestCase):
 
         response = self.client.get(url)
 
-        self.assertContains(response, "You are not logged in")
+        self.assertEqual(response.status_code, 302)

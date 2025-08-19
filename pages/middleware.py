@@ -8,15 +8,15 @@ class SessionDeadlineMiddleware:
 
     def __call__(self, request):
         today = date.today()
-        last_check_obj, _ = SystemStatus.objects.get_or_create(key="last_session_check", defaults={"value": str(today)})
 
-        if last_check_obj.value != str(today):
+        last_check_obj, created = SystemStatus.objects.get_or_create(key="last_session_check", defaults={"value": str(today)})
+
+        if created or last_check_obj.value != str(today):
             expired_sessions = Session.objects.filter(
                 auto_end=True,
                 deadline__lt=today,
                 finished_at__isnull=True
             )
-
             for session in expired_sessions:
                 session.updateSessionRanking()
                 session.finished_at = timezone.make_aware(
@@ -26,5 +26,4 @@ class SessionDeadlineMiddleware:
             
             last_check_obj.value = str(today)
             last_check_obj.save(update_fields=["value"])
-
         return self.get_response(request)
