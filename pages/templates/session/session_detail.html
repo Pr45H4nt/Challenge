@@ -152,10 +152,14 @@
         <div class="status-content">
             <h3>You're not a member yet</h3>
             <p>Join this session to start tracking your progress and compete with others!</p>
-            <a href="{% url 'joinsession' session_id=session.id %}" class="btn btn-primary btn-glow">
-                <span class="btn-icon">🚀</span>
-                Join Session
-            </a>
+
+            <form action="{% url 'joinsession' session_id=session.id %}" method="post" style="display:inline;">
+    {% csrf_token %}
+    <button type="submit" class="btn btn-primary btn-glow">
+        <span class="btn-icon">🚀</span>
+        Join Session
+    </button>
+</form>
         </div>
     </div>
 {% else %}
